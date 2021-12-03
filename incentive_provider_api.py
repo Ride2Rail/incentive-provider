@@ -1,14 +1,11 @@
 import os
 from flask import Flask, request
-from r2r_omr_utils.advanced_logger import *
+from r2r_offer_utils.advanced_logger import *
 import codes.communicators
 
 service_name = os.path.splitext(os.path.basename(__file__))[0]
 
 app = Flask(service_name)
-
-
-
 
 
 #
@@ -18,17 +15,14 @@ app = Flask(service_name)
 
 @app.route('/incentive_provider/', methods=['GET'])
 def return_incentives():
-    args                    = request.args.to_dict()
-    request_id              = args["request_id"]
-    logger.info(f"GET request for incentives obtained with request_id = {request_id}".format(user_id=request_id))
+    args = request.args.to_dict()
+    request_id = args["request_id"]
+    logger.info(f"GET request for incentives obtained with request_id = {request_id}")
 
     # test communicator
-    ALC = codes.communicators.Offer_Cache_Communicator()
+    ALC = codes.communicators.OfferCacheCommunicator()
 
     return "{}", 200
-
-
-
 
 
 if __name__ == '__main__':

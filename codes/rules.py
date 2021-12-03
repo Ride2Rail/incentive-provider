@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 
 
 class Rule(ABC):
-    def __init__(self, rule_checker, name, key, priority_rule = None):
+    def __init__(self, rule_checker, name, key, priority_rule=None):
         self.ruleChecker = rule_checker
         self.name = name
         self.key = key
@@ -71,3 +71,9 @@ class ThreePreviousEpisodesRS(Rule):
             'values': data_dict[self.key]
         }
         return self.checkFulfilled(pass_dict, incentives)
+
+
+class Incentive:
+    def __init__(self, description):
+        self.eligible = False
+        self.description = description

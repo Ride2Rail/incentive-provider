@@ -2,12 +2,6 @@ from rules import *
 from communicators import *
 
 
-class Incentive:
-    def __init__(self, description):
-        self.eligible = False
-        self.description = description
-
-
 class IncentiveProvider:
     def __init__(self, ruleList):
         self.ruleList = ruleList

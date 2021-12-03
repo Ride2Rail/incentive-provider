@@ -2,8 +2,8 @@ from abc import abstractmethod, ABC
 
 
 class Rule(ABC):
-    def __init__(self, rule_checker, name, key, priority_rule=None):
-        self.ruleChecker = rule_checker
+    def __init__(self, communicator, name, key, priority_rule=None):
+        self.communicator = communicator
         self.name = name
         self.key = key
         self.priorityRule = priority_rule
@@ -23,15 +23,15 @@ class Rule(ABC):
         return self.checkFulfilled(data_dict, incentives)
 
     def checkFulfilled(self, data_dict, incentives):
-        rule = self.ruleChecker.checkRule(data_dict)
+        rule = self.communicator.accesRuleData(data_dict)
         for incentive in incentives:
             incentive.eligible = rule
         return incentives
 
 
 class TwoPassShared(Rule):
-    def __init__(self, rule_checker):
-        super().__init__(rule_checker,
+    def __init__(self, communicator):
+        super().__init__(communicator,
                          name="TrainSeatUpgrade",
                          key="travelEpisodeId")
 
@@ -47,19 +47,22 @@ class TwoPassShared(Rule):
 
 class RideSharingInvolved(Rule):
     def isFulfilled(self, data_dict):
-        incentives = [Incentive("10discount")]
+        incentives = [Incentive("10discount", "10% discount")]
         return self.checkFulfilled(data_dict, incentives)
 
     def checkFulfilled(self, data_dict, incentives):
-        rule = 'others-drive-car' in data_dict['TransportModes']
+        # 1. get all leg ids: ['<request_id>:<offer_id>:']
+        # 2. iterate leg ids: [leg_id] and extract offer transportation_mode
+        transport_modes = self.communicator.accesRuleData(data_dict)
+        rule = 'others-drive-car' in transport_modes
         for incentive in incentives:
             incentive.eligible = rule
         return incentives
 
 
 class ThreePreviousEpisodesRS(Rule):
-    def __init__(self, rule_checker):
-        super().__init__(rule_checker,
+    def __init__(self, communicator):
+        super().__init__(communicator,
                          name="20discount",
                          key="travellerId"
                          )
@@ -74,6 +77,7 @@ class ThreePreviousEpisodesRS(Rule):
 
 
 class Incentive:
-    def __init__(self, description):
+    def __init__(self, incentiveRankerID, description):
+        self.incentiveRankerID = incentiveRankerID
         self.eligible = False
         self.description = description

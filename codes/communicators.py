@@ -9,7 +9,7 @@ class Communicator(ABC):
         self.data = data
 
     @abstractmethod
-    def checkRule(self) -> bool:
+    def accesRuleData(self) -> bool:
         pass
 
 
@@ -19,7 +19,7 @@ class AgreementLedgerCommunicator(Communicator):
 
         # objects required for requests
 
-    def checkRule(self) -> bool:
+    def accesRuleData(self) -> bool:
         # if the request was successful extract the data
         self.authenticate()
         self.obtainRequest(self.data['url_suffix'][0], self.data['values'][0])
@@ -43,6 +43,6 @@ class OfferCacheCommunicator(Communicator):
             CACHE_PORT = config.get('cache', 'port')
             cache = redis.Redis(host=CACHE_HOST, port=CACHE_PORT, decode_responses=True)
 
-    def checkRule(self) -> bool:
+    def accesRuleData(self) -> bool:
         # if the request was successful
         pass

@@ -13,15 +13,6 @@ class Rule(ABC):
     def isFulfilled(self, data_dict):
         pass
 
-    def isFulfilledInc(self, data_dict, incentive_names):
-        incentives = [Incentive(inc_name) for inc_name in incentive_names]
-        # if the priority rule is not fulfilled
-        if self.priorityRule is not None and self.priorityRule.fulfilled:
-            for incentive in incentives:
-                incentive.eligible = False
-            return incentives
-        return self.checkFulfilled(data_dict, incentives)
-
     def checkFulfilled(self, data_dict, incentives):
         rule = self.communicator.accesRuleData(data_dict)
         for incentive in incentives:
@@ -36,7 +27,8 @@ class TwoPassShared(Rule):
                          key="travelEpisodeId")
 
     def isFulfilled(self, data_dict):
-        incentives = [Incentive("TrainSeatUpgrade")]
+        # Required data: offer_id
+        incentives = [Incentive("TrainSeatUpgrade", "Train seat upgrade")]
         # extract here all passed travelEpisodes
         pass_dict = {
             'url_suffix': self.name,
@@ -47,6 +39,7 @@ class TwoPassShared(Rule):
 
 class RideSharingInvolved(Rule):
     def isFulfilled(self, data_dict):
+        # Required data: offer_id, <iterated> leg_id, transportation_mode
         incentives = [Incentive("10discount", "10% discount")]
         return self.checkFulfilled(data_dict, incentives)
 
@@ -61,6 +54,7 @@ class RideSharingInvolved(Rule):
 
 
 class ThreePreviousEpisodesRS(Rule):
+    # Required data: offer_id, <iterated> leg_id, traveller_id, transportation_mode
     def __init__(self, communicator):
         super().__init__(communicator,
                          name="20discount",
@@ -69,15 +63,30 @@ class ThreePreviousEpisodesRS(Rule):
 
     def isFulfilled(self, data_dict):
         incentives = [Incentive("20discount")]
-        pass_dict = {
+        agr_ledg_dict = {
             'url_suffix': self.name,
             'values': data_dict[self.key]
         }
-        return self.checkFulfilled(pass_dict, incentives)
+        offer_cache_dict = {
+            'offer_id': data_dict['travelOfferId']
+        }
+        data_dict_list = {'agr_ledg_dict': agr_ledg_dict,
+                          'offer_cache_dict': offer_cache_dict}
+        return self.checkFulfilled(data_dict_list, incentives)
 
+    def checkFulfilled(self, data_dict, incentives):
+        # 1. get all leg ids: ['<request_id>:<offer_id>:']
+        # 2. iterate leg ids: [leg_id] and extract offer transportation_mode
+
+        agr_ledger_res = self.communicator.accesRuleData(data_dict['agr_ledg_dict'])
+        transport_modes = self.communicator.accesRuleData(data_dict['offer_cache_dict'])
+        rule = 'others-drive-car' in transport_modes and agr_ledger_res
+        for incentive in incentives:
+            incentive.eligible = rule
+        return incentives
 
 class Incentive:
     def __init__(self, incentiveRankerID, description):
         self.incentiveRankerID = incentiveRankerID
-        self.eligible = False
         self.description = description
+        self.eligible = False

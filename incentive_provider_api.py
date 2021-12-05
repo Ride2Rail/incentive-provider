@@ -26,7 +26,7 @@ def return_incentives():
 
 
 if __name__ == '__main__':
-    FLASK_PORT = my_configLoader.config.get('flask', 'port')
+    FLASK_PORT = config.get('flask', 'port')
     os.environ["FLASK_ENV"] = "development"
     app.run(port=int(FLASK_PORT), debug=True, use_reloader=False)
     exit(0)

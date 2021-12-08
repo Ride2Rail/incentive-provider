@@ -3,13 +3,7 @@ import redis
 import r2r_offer_utils.cache_operations
 import logging
 
-import configparser as cp
-from os import path
-
-
 logger = logging.getLogger('incentive_provider_api.communicators')
-
-
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -18,7 +12,7 @@ class Communicator(ABC):
         self.data = data
 
     @abstractmethod
-    def accessRuleData(self) -> bool:
+    def accessRuleData(self, dict_data) -> bool:
         pass
 
 ########################################################################################################################
@@ -30,7 +24,7 @@ class AgreementLedgerCommunicator(Communicator):
 
         # objects required for requests
 
-    def accessRuleData(self) -> bool:
+    def accessRuleData(self, dict_data) -> bool:
         # if the request was successful extract the data
         self.authenticate()
         self.obtainRequest(self.data['url_suffix'][0], self.data['values'][0])
@@ -57,7 +51,6 @@ class OfferCacheCommunicator(Communicator):
             # read connection parameters from the config file
             CACHE_HOST      = r2r_offer_utils.advanced_logger.config.get('cache', 'host')
             CACHE_PORT      = r2r_offer_utils.advanced_logger.config.get('cache', 'port')
-
             logger.info(f"Connecting to offer cache: CACHE_HOST = {CACHE_HOST}, CACHE_PORT = {CACHE_PORT}")
             try:
                 # establish connection to the offer cache
@@ -87,6 +80,11 @@ class OfferCacheCommunicator(Communicator):
         return {'output_offer_level':output_offer_level, 'output_tripleg_level':output_tripleg_level}
 
 
-    def accessRuleData(self) -> bool:
-        # if the request was successful
-        pass
+    def accessRuleData(self, dict_data) -> bool:
+        request_id                  = dict_data['request_id']
+        list_offer_level_keys       = dict_data['list_offer_level_keys']
+        list_tripleg_level_keys     = dict_data['list_tripleg_level_keys']
+        return self.read_data_from_offer_cache(request_id, list_offer_level_keys, list_tripleg_level_keys)
+
+
+

@@ -1,27 +1,63 @@
-from rules import *
-from communicators import *
+from codes.rules import *
+import codes.communicators
+import logging
 
+logger = logging.getLogger('incentive_provider_api.incentive_provider')
 
 class IncentiveProvider:
     def __init__(self, ruleList):
         self.ruleList = ruleList
 
     def getEligibleIncentives(self, data_dict):
-        return [rule.isFullfilled(data_dict) for rule in self.ruleList]
+        #
+        # apply all rules in the ruleList
+        #
+        return [rule.isFulfilled(data_dict) for rule in self.ruleList]
 
-    def consistencyCheck(self):
-        pass
+    def consistencyCheck(self, allIncentives):
+        #
+        # currently this is only a placeholder
+        #
+        return allIncentives
 
 
 class IncentiveProviderManager:
     def __init__(self):
-        self.ruleAgreement = TwoPassShared(OfferCacheCommunicator())
-        self.agreementRuleCommunicator = AgreementLedgerCommunicator()
-        self.rideSharingInvolved = RideSharingInvolved(self.agreementRuleCommunicator)
-        self.threeBookingRS = ThreePreviousEpisodesRS(self.agreementRuleCommunicator)
+        #
+        # create required communicators
+        #
+        # offer cache communicator
+        OCC = codes.communicators.OfferCacheCommunicator()
 
-        rule_list = [self.ruleAgreement, self.rideSharingInvolved, self.threeBookingRS]
+        #
+        # create incentive provider rules
+        #
+        # create rule RuleRideSharingInvolved
+        self.RuleRideSharingInvolved = RideSharingInvolved({"offer_cache_communicator":OCC})
+
+
+
+
+        #self.ruleAgreement = TwoPassShared(OfferCacheCommunicator())
+        #self.agreementRuleCommunicator = AgreementLedgerCommunicator()
+
+
+
+
+        #self.threeBookingRS = ThreePreviousEpisodesRS(self.agreementRuleCommunicator)
+
+        #rule_list = [self.ruleAgreement, self.rideSharingInvolved, self.threeBookingRS]
+
+        #
+        # insert all created rules into the rule_list
+        #
+        rule_list = [self.RuleRideSharingInvolved]
+
+        #
+        # create Incentive Provider
+        #
         self.incentiveProvider = IncentiveProvider(rule_list)
+
 
     def getIncentives(self, data_dict):
         allIncentives = self.incentiveProvider.getEligibleIncentives(data_dict)

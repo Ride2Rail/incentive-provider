@@ -24,7 +24,7 @@ def return_incentives():
 
     # test communicator
     ALC                                         = codes.communicators.OfferCacheCommunicator()
-
+    '''
     dict                                        = ALC.read_data_from_offer_cache(request_id,
                                                                                 [],
                                                                                 ["duration",
@@ -42,6 +42,8 @@ def return_incentives():
                                                                                  "last_minute_changes",
                                                                                  "frequency_of_service",
                                                                                  "business_area_presence"])
+    '''
+
 
 
     '''
@@ -49,6 +51,12 @@ def return_incentives():
                                                                                   ["bookable_total", "complete_total"],
                                                                                   ["duration", "can_share_cost"])
     '''
+
+    dict                                        = ALC.accessRuleData({"request_id":request_id,
+                                                                      "list_offer_level_keys":["triplegs"],
+                                                                      "list_tripleg_level_keys":[]})
+
+
 
 
     print("dict = ", dict)

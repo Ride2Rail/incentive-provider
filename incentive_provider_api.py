@@ -71,7 +71,7 @@ def return_incentives():
     print(f"rule_output={RideSharing}")
 
     # show the
-    if RideSharing is not None:
+    if RideSharing is not None: 
         for key in RideSharing:
             print(f"KEY={key}, incentive={RideSharing[key].eligible}")
     '''

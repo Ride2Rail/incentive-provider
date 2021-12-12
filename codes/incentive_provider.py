@@ -33,7 +33,7 @@ class IncentiveProviderManager:
         # create incentive provider rules
         #
         # create rule RuleRideSharingInvolved
-        self.RuleRideSharingInvolved = RideSharingInvolved({"offer_cache_communicator":OCC})
+        self.RuleRideSharingInvolved = RideSharingInvolved({"offer_cache_communicator": OCC})
 
 
 

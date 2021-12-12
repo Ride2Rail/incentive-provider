@@ -29,6 +29,7 @@ class TwoPassShared(Rule):
         super().__init__(communicator_dict)
         self.name = ""
         self.key  = ""
+        self.communicator_dict = {}
 
     def isFulfilled(self, data_dict):
         # Required data: offer_id
@@ -146,8 +147,8 @@ dict =  {'output_offer_level': {'offer_ids': ['cb32d4fe-47fd-4b2f-aefa-01251d2fe
 ########################################################################################################################
 class ThreePreviousEpisodesRS(Rule):
     # Required data: offer_id, <iterated> leg_id, traveller_id, transportation_mode
-    def __init__(self, communicator):
-        super().__init__(communicator,
+    def __init__(self, communicator_dict):
+        super().__init__(communicator_dict,
                          name="20discount",
                          key="travellerId"
                          )
@@ -168,9 +169,9 @@ class ThreePreviousEpisodesRS(Rule):
     def checkFulfilled(self, data_dict, incentives):
         # 1. get all leg ids: ['<request_id>:<offer_id>:']
         # 2. iterate leg ids: [leg_id] and extract offer transportation_mode
-
-        agr_ledger_res = self.communicator.accesRuleData(data_dict['agr_ledg_dict'])
-        transport_modes = self.communicator.accesRuleData(data_dict['offer_cache_dict'])
+        OCcommunicator = self.communicator_dict["offer_cache_communicator"]
+        agr_ledger_res = OCcommunicator.accesRuleData(data_dict['agr_ledg_dict'])
+        transport_modes = OCcommunicator.accesRuleData(data_dict['offer_cache_dict'])
         rule = 'others-drive-car' in transport_modes and agr_ledger_res
         for incentive in incentives:
             incentive.eligible = rule

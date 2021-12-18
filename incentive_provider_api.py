@@ -4,10 +4,12 @@ from r2r_offer_utils.advanced_logger import *
 import codes.communicators
 import codes.rules
 import codes.incentive_provider
+from codes.AL_requester import *
 
 service_name    = os.path.splitext(os.path.basename(__file__))[0]
 app             = Flask(service_name)
 
+requestObtainer = RequestObtainer(config)
 #
 # Examples of the request
 #
@@ -91,6 +93,23 @@ def return_incentives():
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
+
+# curl -v -X GET http://127.0.0.1:5003/ALget/travId-11/travEpId-11
+@app.route('/ALget/<traveller_id>/<travel_episode_id>', methods=['GET'])
+def return_ALdata(traveller_id, travel_episode_id):
+    """
+    passes requests for 20 discount and upgrade seat incentives from agreement ledger
+    :return: either a response json from load_request, or an error response
+    """
+    response = requestObtainer.load_request(traveller_id, travel_episode_id)
+    if type(response) is MyResponse:
+        logger.error("error in authentication token")
+        return response.get_response()
+    if type(response) is dict:
+        logger.info("json returned succesfully")
+        return response
+    return "{}",404
+
 if __name__ == '__main__':
     FLASK_PORT = config.get('flask', 'port')
     os.environ["FLASK_ENV"] = "development"

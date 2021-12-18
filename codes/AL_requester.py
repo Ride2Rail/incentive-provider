@@ -30,8 +30,8 @@ class AuthTokenObtainer:
             if token_request.status_code == 200:
                 token_json = token_request.json()
                 try:
-                    self.token = token_json['accessToken']
-                    self.expires = datetime.now() + timedelta(seconds=token_request.json()['expiresIn'])
+                    self.token = token_json['access_token']
+                    self.expires = datetime.now() + timedelta(seconds=token_request.json()['expires_in'])
                 except KeyError as e:
                     return MyResponse(f'Key {str(e)} not found in authentication response JSON',
                                       521, error_source='authentication api')
@@ -90,23 +90,42 @@ class RequestObtainer:
         if type(self.auth_token) is MyResponse:
             return self.auth_token
 
-        headers_get = {'accept': 'application/json', 'authorization': 'Bearer ' + self.auth_token}
-        disc20 = self.execute_request(id=traveller_id, url=self.url_disc20, name="AL disc20", headers=headers_get)
-        upgrSeat = self.execute_request(id=travel_episode_id, url=self.url_upgrSeat, name="AL upgrade seat",
-                                        headers=headers_get)
+        headers_get = {'accept': 'application/json', 'Authorization': 'Bearer ' + self.auth_token}
+        # disc20 = self.execute_request(id=traveller_id, url=self.url_disc20, name="AL disc20", headers=headers_get)
+        disc20 = requests.get(self.url_disc20 + traveller_id, headers=headers_get)
+        # upgrSeat = self.execute_request(id=travel_episode_id, url=self.url_upgrSeat, name="AL upgrade seat",
+        #                                 headers=headers_get)
+        upgrSeat = requests.get(self.url_upgrSeat + travel_episode_id, headers=headers_get)
+        disc20_resp = self.checkResponse(disc20, 'check', name=self.url_disc20)
+        upgrSeat_resp = self.checkResponse(upgrSeat, 'check', name=self.url_upgrSeat)
 
         return {
-            'disc20': disc20,
-            'upgrSeat': upgrSeat,
+            'travellerId': traveller_id,
+            'disc20': disc20_resp,
+            'upgrSeat': upgrSeat_resp,
         }
 
-    def execute_request(self, id, url, name="", headers=""):
-        url = url + id
-        result_pref = requests.get(url, data=None, headers=headers)
-        if result_pref.status_code == 200:
-            return result_pref
-        else:  # if was not a 200 returned
-            MyResponse(result_pref.content.decode('UTF-8'), result_pref.status_code, id, error_source=name)
+    def checkResponse(self, response, key, name=""):
+        if response.status_code == 200:
+            try:
+                return int(self.checkKey(response.json(), key, ret_val=0))
+            except ValueError:
+                logger.error(f'Wrong type value of received from the Agreement Ledger: {name}')
+        else:
+            try:
+                logger.error(f'Error {response.status_code}, response from server: {response.json()}')
+            except ValueError:
+                logger.error(f'Error {response.status_code} received without a response')
+            return 0
+
+    def checkKey(self, json_dict, key, ret_val=None):
+        if json_dict is None:
+            return ret_val
+        try:
+            data = json_dict[key]
+        except KeyError:
+            data = ret_val
+        return data
 
 
 class MyResponse:

@@ -15,6 +15,8 @@ requestObtainer = RequestObtainer(config)
 #
 # curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=46a4fa0d-2fd2-4317-8441-1b6a9511f1e7"
 # curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=696f60c1-3458-4ca9-aa96-c31ae91559a7"
+# curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=569e2e80-4e7f-41b5-a8ef-b3a686abe224"
+
 
 ########################################################################################################################
 ########################################################################################################################
@@ -79,7 +81,7 @@ def return_incentives():
     '''
 
     # test IncentiveProviderManager
-    IPM     = codes.incentive_provider.IncentiveProviderManager()
+    IPM     = codes.incentive_provider.IncentiveProviderManager(config)
     output  =  IPM.getIncentives({"request_id":request_id})
     # print output on the screen (only for testing purposes)
     if output is not None:

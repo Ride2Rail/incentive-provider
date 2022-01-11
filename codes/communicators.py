@@ -53,13 +53,13 @@ class OfferCacheCommunicator(Communicator):
         Establish connection with the offer cache.
     """
 
-    def __init__(self):
+    def __init__(self, config):
         # TODO: The config should be passed as an argument, this is not a way how to check it,
         # or just pass the ports as arguments
-        if r2r_offer_utils.advanced_logger.config is not None:
+        if config is not None:
             # read connection parameters from the config file
-            CACHE_HOST = r2r_offer_utils.advanced_logger.config.get('cache', 'host')
-            CACHE_PORT = r2r_offer_utils.advanced_logger.config.get('cache', 'port')
+            CACHE_HOST = config.get('cache', 'host')
+            CACHE_PORT = config.get('cache', 'port')
             logger.info(f"Connecting to offer cache: CACHE_HOST = {CACHE_HOST}, CACHE_PORT = {CACHE_PORT}")
             try:
                 # establish connection to the offer cache
@@ -70,14 +70,13 @@ class OfferCacheCommunicator(Communicator):
             logger.error('Could not read config file in communicators.py')
 
     """
-        Request data from the offer cache.
+     Request data from the offer cache.
     """
-
     def read_data_from_offer_cache(self, request_id, list_offer_level_keys, list_tripleg_level_keys):
         try:
             # read data from the offer cache
             logger.info(f"Read data from the offer cache: request_id = {request_id},"
-                        f" list_offer_level_keys = {list_offer_level_keys}, "
+                        f"list_offer_level_keys = {list_offer_level_keys}, "
                         f"list_tripleg_level_keys = {list_tripleg_level_keys}")
             output_offer_level, output_tripleg_level = r2r_offer_utils.cache_operations.read_data_from_cache_wrapper(
                 self.cache,

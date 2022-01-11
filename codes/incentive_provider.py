@@ -22,12 +22,12 @@ class IncentiveProvider:
 
 
 class IncentiveProviderManager:
-    def __init__(self):
+    def __init__(self, config):
         #
         # create required communicators
         #
         # offer cache communicator
-        OCC = codes.communicators.OfferCacheCommunicator()
+        OCC = codes.communicators.OfferCacheCommunicator(config)
 
         #
         # create incentive provider rules
@@ -35,17 +35,11 @@ class IncentiveProviderManager:
         # create rule RuleRideSharingInvolved
         self.RuleRideSharingInvolved = RideSharingInvolved({"offer_cache_communicator": OCC})
 
-
-
-
         #self.ruleAgreement = TwoPassShared(OfferCacheCommunicator())
         #self.agreementRuleCommunicator = AgreementLedgerCommunicator()
 
 
-
-
         #self.threeBookingRS = ThreePreviousEpisodesRS(self.agreementRuleCommunicator)
-
         #rule_list = [self.ruleAgreement, self.rideSharingInvolved, self.threeBookingRS]
 
         #

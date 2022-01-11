@@ -54,8 +54,7 @@ class OfferCacheCommunicator(Communicator):
     """
 
     def __init__(self, config):
-        # TODO: The config should be passed as an argument, this is not a way how to check it,
-        # or just pass the ports as arguments
+        # get the ports
         if config is not None:
             # read connection parameters from the config file
             CACHE_HOST = config.get('cache', 'host')
@@ -84,7 +83,7 @@ class OfferCacheCommunicator(Communicator):
                 list_offer_level_keys,
                 list_tripleg_level_keys)
         except redis.exceptions.ConnectionError as exc:
-            logger.error("Reading from the offer cache failed in communicators.py.")
+            logger.error(f"Reading from the offer cache failed in communicators.py: {str(exc)}")
             return None
         return {'output_offer_level': output_offer_level, 'output_tripleg_level': output_tripleg_level}
 

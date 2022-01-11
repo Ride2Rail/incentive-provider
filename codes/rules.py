@@ -40,6 +40,20 @@ class TwoPassShared(Rule):
             'values': [v for k, v in data_dict if k in self.key]
         }
         return self.checkFulfilled(pass_dict, incentives)
+
+    # From the Redis cache obtains the set of leg for the offer_id
+    def getCacheData(self, cache, offer_id):
+        leg_set = set()
+        pipe = cache.pipeline()
+        for offers in cache.lrange(f'{offer_id}:offers', 0, -1):
+            pipe.lrange(f'{offer_id}:{offers}:legs', 0, -1)
+
+        for offer in pipe.execute():
+            leg_set.update(offer)
+        return leg_set
+
+
+
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -54,13 +68,14 @@ class RideSharingInvolved(Rule):
                                        "list_offer_level_keys": [],
                                        "list_tripleg_level_keys": ["transportation_mode"]}
 
-        logger.info(f"Rule: RideSharingInvolved State: About to request data from the Offer cache using: communicator_data_dict={communicator_data_dict}")
+        logger.info(f"Rule: RideSharingInvolved State: About to request data from the Offer cache using: "
+                    f"communicator_data_dict={communicator_data_dict}")
         # obtain data about the trip offers from the offer cache
         trip_offers_data            = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
 
         logger.info(f"Rule: RideSharingInvolved State: Data extracted from the Offer cache. trip_offers_data={trip_offers_data}")
         if trip_offers_data is not None:
-            # Process obtained data and evaluated id Offer iiems associated with the requuest are entitled to receive incentive
+            # Process obtained data and evaluated id Offer items associated with the requuest are entitled to receive incentive
             # loop over travel offer items
             result = {}
             try:
@@ -176,6 +191,11 @@ class ThreePreviousEpisodesRS(Rule):
         for incentive in incentives:
             incentive.eligible = rule
         return incentives
+
+    # From the Redis cache obtains
+    def getCacheData(self, cache, request_id):
+        return cache.get(f"{request_id}:traveller_id")
+
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################

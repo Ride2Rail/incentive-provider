@@ -1,5 +1,5 @@
 from codes.rules import *
-import codes.communicators
+import codes.communicators as communicators
 import logging
 
 logger = logging.getLogger('incentive_provider_api.incentive_provider')
@@ -27,17 +27,15 @@ class IncentiveProviderManager:
         # create required communicators
         #
         # offer cache communicator
-        OCC = codes.communicators.OfferCacheCommunicator(config)
-
+        OCC = communicators.OfferCacheCommunicator(config)
+        ALC = communicators.AgreementLedgerCommunicator(config)
         #
         # create incentive provider rules
         #
-        # create rule RuleRideSharingInvolved
-        self.RuleRideSharingInvolved = RideSharingInvolved({"offer_cache_communicator": OCC})
-
-        #self.ruleAgreement = TwoPassShared(OfferCacheCommunicator())
-        #self.agreementRuleCommunicator = AgreementLedgerCommunicator()
-
+        # create rule RideSharingInvolved
+        self.ruleRideSharingInvolved = RideSharingInvolved({"offer_cache_communicator": OCC})
+        # create rule ruleTwoPassShared
+        self.ruleTwoPassShared = TwoPassShared({"AL_communicator": ALC})
 
         #self.threeBookingRS = ThreePreviousEpisodesRS(self.agreementRuleCommunicator)
         #rule_list = [self.ruleAgreement, self.rideSharingInvolved, self.threeBookingRS]
@@ -45,7 +43,7 @@ class IncentiveProviderManager:
         #
         # insert all created rules into the rule_list
         #
-        rule_list = [self.RuleRideSharingInvolved]
+        rule_list = [self.ruleRideSharingInvolved]
 
         #
         # create Incentive Provider

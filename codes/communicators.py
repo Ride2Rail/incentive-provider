@@ -3,6 +3,8 @@ import redis
 import r2r_offer_utils.cache_operations
 import logging
 
+from codes.AL_requester import *
+
 logger = logging.getLogger('incentive_provider_api.communicators')
 
 
@@ -24,20 +26,19 @@ class Communicator(ABC):
 class AgreementLedgerCommunicator(Communicator):
     def __init__(self, data):
         super().__init__(data)
-
+        config = data["config"]
         # objects required for requests
+        self.url_dict = {
+            "disc20_url": config.get('agreement_ledger_api', 'disc20_url'),
+            "upgrSeat_url": config.get('agreement_ledger_api', 'upgrSeat_url')
+        }
+        self.requestObtainer = RequestObtainer(config)
 
     def accessRuleData(self, dict_data):
-        # if the request was successful extract the data
-        self.authenticate()
-        self.obtainRequest(self.data['url_suffix'][0], self.data['values'][0])
-        pass
+        # obtain the data from Agreement ledger using request obtainer
+        url = self.url_dict[dict_data['url']]
+        return self.requestObtainer.load_request(url, dict_data['id'])
 
-    def authenticate(self):
-        pass
-
-    def obtainRequest(self, url_suffix, id):
-        pass
 
 
 ########################################################################################################################
@@ -89,6 +90,24 @@ class OfferCacheCommunicator(Communicator):
 
     def accessRuleData(self, dict_data):
         request_id = dict_data['request_id']
-        list_offer_level_keys = dict_data['list_offer_level_keys']
-        list_tripleg_level_keys = dict_data['list_tripleg_level_keys']
-        return self.read_data_from_offer_cache(request_id, list_offer_level_keys, list_tripleg_level_keys)
+        # if its a call for more complicated data
+        if 'list_offer_level_keys' in dict_data:
+            list_offer_level_keys = dict_data['list_offer_level_keys']
+            list_tripleg_level_keys = dict_data['list_tripleg_level_keys']
+            return self.read_data_from_offer_cache(request_id, list_offer_level_keys, list_tripleg_level_keys)
+        # if its a simple call
+        else:
+            try:
+                pipe = self.cache.pipeline()
+                pipe.lrange("22b2b69f-567c-4e62-b791-476bb0cf3825:offers", 0, -1)
+                pipe.get(f"{request_id}:{dict_data['offer_level_id']}")
+                pipe_list = pipe.execute()
+                pipe_res_dict = {
+                    "offer_ids": pipe_list[0],
+                    "traveller_id": pipe_list[1]
+                }
+                return pipe_res_dict
+            except KeyError:
+                return None
+            except redis.exceptions.ConnectionError as exc:
+                logging.debug("Reading from cache by a feature collector failed")

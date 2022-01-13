@@ -32,14 +32,54 @@ class TwoPassShared(Rule):
         self.communicator_dict = {}
 
     def isFulfilled(self, data_dict):
-        # Required data: offer_id
-        incentives = [Incentive("TrainSeatUpgrade", "Train seat upgrade")]
-        # extract here all passed travelEpisodes
-        pass_dict = {
-            'url_suffix': self.name,
-            'values': [v for k, v in data_dict if k in self.key]
-        }
-        return self.checkFulfilled(pass_dict, incentives)
+        return self.checkFulfilled(data_dict)
+
+
+    def checkFulfilled(self, data_dict):
+        # prepare request to the offer cache regarding transport modes linked to the travel offer items included in the
+        communicator_data_dict      = {"request_id": data_dict["request_id"],
+                                       "list_offer_level_keys": [],
+                                       "list_tripleg_level_keys": ["transportation_mode"]}
+
+        logger.info(f"Rule: RideSharingInvolved State: About to request data from the Offer cache using: "
+                    f"communicator_data_dict={communicator_data_dict}")
+        # obtain data about the trip offers from the offer cache
+        trip_offers_data            = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
+
+        if trip_offers_data is not None:
+            # Process obtained data and evaluated id Offer items associated with the requuest are entitled to receive incentive
+            # loop over travel offer items
+            tripleg_id_dict = {}
+            result = {}
+            try:
+                for offer_id in trip_offers_data["output_offer_level"]["offer_ids"]:
+                    # loop over triplegs belonging to the offer item
+                    incentive = Incentive("trainSeatUpgrade", "Train seat upgrade")
+                    for trip_leg_id in trip_offers_data["output_tripleg_level"][offer_id]["triplegs"]:
+                        transportation_mode = trip_offers_data["output_tripleg_level"][offer_id][trip_leg_id]["transportation_mode"]
+                        # if there is ridesharing add it to the set
+                        if transportation_mode == 'others-drive-car':
+                            # check if the tripleg was already checked
+                            if trip_leg_id in tripleg_id_dict:
+                                incentive.eligible = tripleg_id_dict[trip_leg_id]
+                            else:
+                                # check the availability for trip ID in Agreement Ledger
+                                req_res = self.communicator_dict["AL_communicator"].accessRuleData({
+                                    "url": "upgrSeat_url",
+                                    "id": trip_leg_id
+                                })
+                                # add it to the dictionary
+                                tripleg_id_dict[trip_leg_id] = req_res['check']
+                                if req_res['check']:
+                                    incentive.eligible = True
+                                    break
+                    result[offer_id]    = incentive
+            except KeyError:
+                logger.error(f"Rule: TwoPassShared: Offer cache data cannot be used to determine applicability of the incentive.")
+                return None
+        else:
+            logger.error(f"Rule: TwoPassShared: No data extracted from the Offer cache.")
+            return None
 
     # From the Redis cache obtains the set of leg for the offer_id
     def getCacheData(self, cache, offer_id):
@@ -163,38 +203,40 @@ dict =  {'output_offer_level': {'offer_ids': ['cb32d4fe-47fd-4b2f-aefa-01251d2fe
 class ThreePreviousEpisodesRS(Rule):
     # Required data: offer_id, <iterated> leg_id, traveller_id, transportation_mode
     def __init__(self, communicator_dict):
-        super().__init__(communicator_dict,
-                         name="20discount",
-                         key="travellerId"
-                         )
+        super().__init__(communicator_dict)
+        self.name = "20discount"
+        self.key = "travellerId"
 
     def isFulfilled(self, data_dict):
-        incentives = [Incentive("20discount")]
-        agr_ledg_dict = {
-            'url_suffix': self.name,
-            'values': data_dict[self.key]
-        }
-        offer_cache_dict = {
-            'offer_id': data_dict['travelOfferId']
-        }
-        data_dict_list = {'agr_ledg_dict': agr_ledg_dict,
-                          'offer_cache_dict': offer_cache_dict}
-        return self.checkFulfilled(data_dict_list, incentives)
+        return self.checkFulfilled(data_dict)
 
-    def checkFulfilled(self, data_dict, incentives):
-        # 1. get all leg ids: ['<request_id>:<offer_id>:']
-        # 2. iterate leg ids: [leg_id] and extract offer transportation_mode
-        OCcommunicator = self.communicator_dict["offer_cache_communicator"]
-        agr_ledger_res = OCcommunicator.accesRuleData(data_dict['agr_ledg_dict'])
-        transport_modes = OCcommunicator.accesRuleData(data_dict['offer_cache_dict'])
-        rule = 'others-drive-car' in transport_modes and agr_ledger_res
-        for incentive in incentives:
-            incentive.eligible = rule
-        return incentives
+    def checkFulfilled(self, data_dict):
 
-    # From the Redis cache obtains
-    def getCacheData(self, cache, request_id):
-        return cache.get(f"{request_id}:traveller_id")
+        logger.info(f"Rule: RideSharingInvolved State: About to request data from the Offer cache using: "
+                    f"communicator_data_dict={data_dict}")
+        # obtain data about the trip offers and traveller id from the offer cache
+        communicator_data_dict = {"request_id": data_dict["request_id"],
+                                  "offer_level_id": "traveller_id"
+                                  }
+        user_OC_data = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
+        # if OC data was sucesully obtained
+        if user_OC_data is not None:
+            # get data from agreement ledger
+            req_res = self.communicator_dict["AL_communicator"].accessRuleData({
+                "url": "disc20_url",
+                "id": user_OC_data["traveller_id"]
+            })
+            # TODO: add error logging here
+            if req_res is None:
+                req_res = False
+            ret_dict = {}
+            for offer_id in user_OC_data["traveller_id"]:
+                ret_dict[offer_id] = req_res
+            return req_res
+        else:
+            logger.error(f"Rule: TwoPassShared: No data extracted from the Offer cache.")
+            return None
+
 
 ########################################################################################################################
 ########################################################################################################################
@@ -204,3 +246,4 @@ class Incentive:
         self.incentiveRankerID = incentiveRankerID
         self.description = description
         self.eligible = False
+

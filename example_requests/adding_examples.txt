@@ -1,0 +1,96 @@
+Examples for adding data to cache
+
+Request generated from files:
+subset_3_no_3_tsp_025-xml - 22b2b69f-567c-4e62-b791-476bb0cf3825
+subset_3_no_3_tsp_075.xml - d6452caf-759d-44dc-8667-0954ed879071
+
+POST: https://ledger.r2r.inlecom.eu/api/#/booking/addBooking
+{
+  "lyftId": "lift-s-3-3",
+  "driverId": "driver-2",
+  "price": 1.5,
+  "travelEpisodeId": "4d8495db-02d5-4a21-b1a9-rs1",
+  "travellerId": "26e75a9e-cc02-4414-abf9-ac06a17df474-v-1",
+  "currency": "ISO4217",
+  "id": "bookId-s-3-3-025",
+  "inventory": [
+    {
+      "quantity": 2,
+      "consumable": "seats"
+    },
+    {
+      "quantity": 2,
+      "consumable": "seats"
+    }
+  ],
+  "type": "ride2rail, ip4",
+  "status": "placed"
+}
+
+POST: https://ledger.r2r.inlecom.eu/api/#/booking/addBooking
+{
+  "lyftId": "lift-s-3-3",
+  "driverId": "driver-2",
+  "price": 1.8,
+  "travelEpisodeId": "4d8495db-02d5-4a21-b1a9-rs1",
+  "travellerId": "26e75a9e-cc02-4414-abf9-ac06a17df474-v-3",
+  "currency": "ISO4217",
+  "id": "bookId-s-3-3-075",
+  "inventory": [
+    {
+      "quantity": 2,
+      "consumable": "seats"
+    },
+    {
+      "quantity": 2,
+      "consumable": "seats"
+    }
+  ],
+  "type": "ride2rail, ip4",
+  "status": "placed"
+}
+
+
+POST https://ledger.r2r.inlecom.eu/api/#/event/addEvent
+{
+  "driverId": "driver-2",
+  "subtype": "driver cancels, passenger doesn't show up",
+  "description": "He just didn't show up",
+  "travellerId": "26e75a9e-cc02-4414-abf9-ac06a17df474-v-1",
+  "id": " event-3-3-025",
+  "type": "start",
+  "bookingId": " bookId-s-3-3-025"
+}
+
+POST https://ledger.r2r.inlecom.eu/api/#/event/addEvent
+{
+  "driverId": "driver-2",
+  "subtype": "driver cancels, passenger doesn't show up",
+  "description": "He just didn't show up",
+  "travellerId": "26e75a9e-cc02-4414-abf9-ac06a17df474-v-3",
+  "id": "event-3-3-075",
+  "type": "start",
+  "bookingId": " bookId-s-3-3-075"
+}
+
+POST https://ledger.r2r.inlecom.eu/api/#/event/addEvent
+{
+  "driverId": "driver-2",
+  "subtype": "driver cancels, passenger doesn't show up",
+  "description": "He just didn't show up",
+  "travellerId": "26e75a9e-cc02-4414-abf9-ac06a17df474-v-1",
+  "id": " event-3-3-025-end",
+  "type": "end",
+  "bookingId": " bookId-s-3-3-025"
+}
+
+POST https://ledger.r2r.inlecom.eu/api/#/event/addEvent
+{
+  "driverId": "driver-2",
+  "subtype": "driver cancels, passenger doesn't show up",
+  "description": "He just didn't show up",
+  "travellerId": "26e75a9e-cc02-4414-abf9-ac06a17df474-v-3",
+  "id": "event-3-3-075-end",
+  "type": "end",
+  "bookingId": " bookId-s-3-3-075"
+}

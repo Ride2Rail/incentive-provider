@@ -69,14 +69,13 @@ class RequestObtainer:
 
         # extract urls
         self.url_auth = config.get('agreement_ledger_api', 'auth_url')
-        self.url_disc20 = config.get('agreement_ledger_api', 'disc20_url')
-        self.url_upgrSeat = config.get('agreement_ledger_api', 'upgrSeat_url')
 
-    def load_request(self, traveller_id, travel_episode_id):
+    def load_request(self, url, id, key_attr = "check"):
         """
         authenticates and obtains the request from the API
         returns functions directly to the API
-        :param traveller_id: traveller id provided in the get request
+        :param  url: url for the request
+                id: id as a parameter of URL in the get request
         :return: dictionary containing preference and user profile data, where each contains:
                     - whole request object if 200 was returned or
                     - MyResponse class in case of error if other than 200 returned
@@ -91,19 +90,13 @@ class RequestObtainer:
             return self.auth_token
 
         headers_get = {'accept': 'application/json', 'Authorization': 'Bearer ' + self.auth_token}
-        # disc20 = self.execute_request(id=traveller_id, url=self.url_disc20, name="AL disc20", headers=headers_get)
-        disc20 = requests.get(self.url_disc20 + traveller_id, headers=headers_get)
-        # upgrSeat = self.execute_request(id=travel_episode_id, url=self.url_upgrSeat, name="AL upgrade seat",
-        #                                 headers=headers_get)
-        upgrSeat = requests.get(self.url_upgrSeat + travel_episode_id, headers=headers_get)
-        disc20_resp = self.checkResponse(disc20, 'check', name=self.url_disc20)
-        upgrSeat_resp = self.checkResponse(upgrSeat, 'check', name=self.url_upgrSeat)
+        response = requests.get(url + id, headers=headers_get)
 
-        return {
-            'travellerId': traveller_id,
-            'disc20': disc20_resp,
-            'upgrSeat': upgrSeat_resp,
-        }
+        # check if the response has a proper format
+        if key_attr:
+            return self.checkResponse(response, key_attr, name=url)
+
+        return None
 
     def checkResponse(self, response, key, name=""):
         if response.status_code == 200:

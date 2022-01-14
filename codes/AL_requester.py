@@ -7,9 +7,10 @@ from r2r_offer_utils.advanced_logger import logger
 # class to obtain the authentication token
 class AuthTokenObtainer:
 
-    def __init__(self, key=None, expires=None):
+    def __init__(self, key=None, name="authentication api"):
         self.token = key
-        self.expires = expires
+        self.name = name
+        self.expires = None
 
     # Obtains the authentication key. If a key is requested and actual one has expired, obtains a new key.
     def obtain_token(self, headers, url):
@@ -26,7 +27,7 @@ class AuthTokenObtainer:
             try:
                 token_request = requests.post(url, headers=headers)
             except requests.exceptions.ConnectionError as e:
-                return MyResponse(e, 521, error_source='authentication api')
+                return MyResponse(e, 521, error_source=self.name)
             if token_request.status_code == 200:
                 token_json = token_request.json()
                 try:
@@ -34,15 +35,15 @@ class AuthTokenObtainer:
                     self.expires = datetime.now() + timedelta(seconds=token_request.json()['expires_in'])
                 except KeyError as e:
                     return MyResponse(f'Key {str(e)} not found in authentication response JSON',
-                                      521, error_source='authentication api')
+                                      521, error_source=self.name)
 
             elif token_request.status_code == 401:
                 return MyResponse('authentication error, headers:' + str(token_request.headers), 401,
-                                  error_source='authentication api')
+                                  error_source=self.name)
             # if it's a different error
             else:
                 return MyResponse(token_request.content.decode('UTF-8'), token_request.status_code,
-                                  error_source='authentication api')
+                                  error_source=self.name)
             logger.info("Token successfully obtained")
         return self.token
 
@@ -52,23 +53,31 @@ class RequestObtainer:
     class for obtaining the requests from preference api
     """
 
-    def __init__(self, config):
+    def __init__(self, config, name = "", auth_cfg = None):
         """
-        :param config: configuration file of class ConfigParser
+        :param name: Name of the request obtainer
+        :param auth_cfg: dictionary with authentication details
         """
         # creates authentication token object
         self.token_obtainer = AuthTokenObtainer()
         self.auth_token = None
 
-        auth_secret = config.get('auth', 'basic_secret')
+        self.name = name
+
+        # extract authentication url and secret
+        try:
+            self.url_auth = auth_cfg["auth_url"]
+            auth_secret = auth_cfg['auth_secret']
+            # self.url_auth = config.get('agreement_ledger_api', 'auth_url')
+            # auth_secret = config.get('auth', 'basic_secret')
+        except KeyError as ke:
+            logger.error(f"Missing key {e} in authentication dictionary of request obtainer of {self.name}")
+            return
         # obtains values from config for the authentication
         self.headers_auth = {
             'Authorization': f'Basic {auth_secret}',
             'accept': 'application/json'
         }
-
-        # extract urls
-        self.url_auth = config.get('agreement_ledger_api', 'auth_url')
 
     def load_request(self, url, id, key_attr = "check"):
         """
@@ -81,13 +90,16 @@ class RequestObtainer:
                     - MyResponse class in case of error if other than 200 returned
         """
         # obtains the token from authentication api
+        # if there is an error returns MyResponse object
         try:
             self.auth_token = self.token_obtainer.obtain_token(headers=self.headers_auth, url=self.url_auth)
         except requests.exceptions.ConnectionError as e:
-            return MyResponse(e, 521, error_source='authentication api')
+            MyResponse(e, 521, error_source='authentication api').get_response()
+            return None
         # if there was a request error pass the error
         if type(self.auth_token) is MyResponse:
-            return self.auth_token
+            self.auth_token.get_response()
+            return None
 
         headers_get = {'accept': 'application/json', 'Authorization': 'Bearer ' + self.auth_token}
         response = requests.get(url + id, headers=headers_get)
@@ -103,12 +115,12 @@ class RequestObtainer:
             try:
                 return int(self.checkKey(response.json(), key, ret_val=0))
             except ValueError:
-                logger.error(f'Wrong type value of received from the Agreement Ledger: {name}')
+                logger.error(f'Wrong type value of received from the {self.name}: {name}')
         else:
             try:
-                logger.error(f'Error {response.status_code}, response from server: {response.json()}')
+                logger.error(f'Error {response.status_code} at {self.name}, response from server: {response.json()}')
             except ValueError:
-                logger.error(f'Error {response.status_code} received without a response')
+                logger.error(f'Error {response.status_code} received without a response in {self.name}')
             return 0
 
     def checkKey(self, json_dict, key, ret_val=None):

@@ -32,13 +32,12 @@ class AgreementLedgerCommunicator(Communicator):
             "disc20_url": config.get('agreement_ledger_api', 'disc20_url'),
             "upgrSeat_url": config.get('agreement_ledger_api', 'upgrSeat_url')
         }
-        self.requestObtainer = RequestObtainer(config)
+        self.requestObtainer = RequestObtainer(config, "AgreementLedgerObtainer")
 
     def accessRuleData(self, dict_data):
         # obtain the data from Agreement ledger using request obtainer
         url = self.url_dict[dict_data['url']]
         return self.requestObtainer.load_request(url, dict_data['id'])
-
 
 
 ########################################################################################################################
@@ -54,8 +53,9 @@ class OfferCacheCommunicator(Communicator):
         Establish connection with the offer cache.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, data):
         # get the ports
+        super().__init__(data)
         if config is not None:
             # read connection parameters from the config file
             CACHE_HOST = config.get('cache', 'host')
@@ -99,7 +99,7 @@ class OfferCacheCommunicator(Communicator):
         else:
             try:
                 pipe = self.cache.pipeline()
-                pipe.lrange("22b2b69f-567c-4e62-b791-476bb0cf3825:offers", 0, -1)
+                pipe.lrange(f"{request_id}:offers", 0, -1)
                 pipe.get(f"{request_id}:{dict_data['offer_level_id']}")
                 pipe_list = pipe.execute()
                 pipe_res_dict = {

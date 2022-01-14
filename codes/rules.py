@@ -37,18 +37,17 @@ class TwoPassShared(Rule):
 
     def checkFulfilled(self, data_dict):
         # prepare request to the offer cache regarding transport modes linked to the travel offer items included in the
-        communicator_data_dict      = {"request_id": data_dict["request_id"],
-                                       "list_offer_level_keys": [],
-                                       "list_tripleg_level_keys": ["transportation_mode"]}
+        communicator_data_dict = {"request_id": data_dict["request_id"],
+                                  "list_offer_level_keys": [],
+                                  "list_tripleg_level_keys": ["transportation_mode"]}
 
-        logger.info(f"Rule: RideSharingInvolved State: About to request data from the Offer cache using: "
+        logger.info(f"Rule: TwoPassShared State: About to request data from the Offer cache using: "
                     f"communicator_data_dict={communicator_data_dict}")
         # obtain data about the trip offers from the offer cache
-        trip_offers_data            = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
+        trip_offers_data = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
 
         if trip_offers_data is not None:
             # Process obtained data and evaluated id Offer items associated with the requuest are entitled to receive incentive
-            # loop over travel offer items
             tripleg_id_dict = {}
             result = {}
             try:
@@ -63,17 +62,21 @@ class TwoPassShared(Rule):
                             if trip_leg_id in tripleg_id_dict:
                                 incentive.eligible = tripleg_id_dict[trip_leg_id]
                             else:
-                                # check the availability for trip ID in Agreement Ledger
+                                # if the tripleg was not checked check the availability for trip ID in Agreement Ledger
                                 req_res = self.communicator_dict["AL_communicator"].accessRuleData({
                                     "url": "upgrSeat_url",
                                     "id": trip_leg_id
                                 })
-                                # add it to the dictionary
-                                tripleg_id_dict[trip_leg_id] = req_res['check']
-                                if req_res['check']:
-                                    incentive.eligible = True
-                                    break
-                    result[offer_id]    = incentive
+                                # if AL answered, add the answer to the dictionary recording checked triplegs
+                                if req_res is not None:
+                                    tripleg_id_dict[trip_leg_id] = req_res['check']
+                                    # if true add incentive as checked
+                                    if req_res['check']:
+                                        incentive.eligible = True
+                                        break
+                    result[offer_id] = incentive
+                return result
+
             except KeyError:
                 logger.error(f"Rule: TwoPassShared: Offer cache data cannot be used to determine applicability of the incentive.")
                 return None
@@ -211,8 +214,7 @@ class ThreePreviousEpisodesRS(Rule):
         return self.checkFulfilled(data_dict)
 
     def checkFulfilled(self, data_dict):
-
-        logger.info(f"Rule: RideSharingInvolved State: About to request data from the Offer cache using: "
+        logger.info(f"Rule: ThreePreviousEpisodesRS State: About to request data from the Offer cache using: "
                     f"communicator_data_dict={data_dict}")
         # obtain data about the trip offers and traveller id from the offer cache
         communicator_data_dict = {"request_id": data_dict["request_id"],
@@ -226,7 +228,6 @@ class ThreePreviousEpisodesRS(Rule):
                 "url": "disc20_url",
                 "id": user_OC_data["traveller_id"]
             })
-            # TODO: add error logging here
             if req_res is None:
                 req_res = False
             ret_dict = {}
@@ -234,7 +235,7 @@ class ThreePreviousEpisodesRS(Rule):
                 ret_dict[offer_id] = req_res
             return req_res
         else:
-            logger.error(f"Rule: TwoPassShared: No data extracted from the Offer cache.")
+            logger.error(f"Rule: ThreePreviousEpisodesRS: No data extracted from the Offer cache.")
             return None
 
 

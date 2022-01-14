@@ -59,15 +59,14 @@ class RequestObtainer:
         :param auth_cfg: dictionary with authentication details
         """
         # creates authentication token object
-        self.token_obtainer = AuthTokenObtainer()
-        self.auth_token = None
-
-        self.name = name
+        self.token_obtainer     = AuthTokenObtainer()
+        self.auth_token         = None
+        self.name               = name
 
         # extract authentication url and secret
         try:
-            self.url_auth = auth_cfg["auth_url"]
-            auth_secret = auth_cfg['auth_secret']
+ #           self.url_auth = auth_cfg["auth_url"]
+            auth_secret   = auth_cfg['auth_secret']
             # self.url_auth = config.get('agreement_ledger_api', 'auth_url')
             # auth_secret = config.get('auth', 'basic_secret')
         except KeyError as ke:

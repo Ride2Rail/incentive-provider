@@ -109,7 +109,7 @@ def return_ALdata(request_id):
     IPM = codes.incentive_provider.IncentiveProviderManager(config)
     output = IPM.getIncentives({"request_id": request_id})
 
-    return {"request_id": request_id, "offer_ids": output}, 200
+    return {"request_id": request_id, "offer_incentives": output}, 200
     #
     # if type(response) is MyResponse:
     #     logger.error("error in authentication token")

@@ -52,6 +52,7 @@ class IncentiveProvider:
                 except KeyError as ke:
                     logging.error(f"Missing result for offer {offer_id} when processing rule {rule.name} "
                                   f"in the IncentiveProvider class")
+        return offer_dict
 
 class IncentiveProviderManager:
     def __init__(self, config):

@@ -24,8 +24,14 @@ class IncentiveProvider:
 
     def consistencyCheck(self, allIncentives):
         #
-        # currently this is only a placeholder
+        # checks the incentives, if there is a higher incentive, sets the lesser incentive as non eligible
         #
+        try:
+            for key in allIncentives.keys():
+                if allIncentives[key]["10discount"] and allIncentives[key]["20discount"]:
+                    allIncentives[key]["10discount"] = False
+        except KeyError as ke:
+            logger.error(f"Key missing in Incentive provider: {ke}")
         return allIncentives
 
     def reshapeRuleDicts(self):
@@ -67,24 +73,29 @@ class IncentiveProviderManager:
             "AL_communicator": ALC,
             "offer_cache_communicator": OCC
         }
+
+        #
+        # create incentive provider incentives
+        #
+        incentiveTrainSeatUpgrade = codes.rules.Incentive("trainSeatUpgrade", "Train seat upgrade")
+        incentive10discount = codes.rules.Incentive("10discount", "10% discount", "20discount")
+        incentive20discount = codes.rules.Incentive("20discount", "20% discount")
         #
         # create incentive provider rules
         #
-        # create rule RideSharingInvolved
-        self.ruleRideSharingInvolved = codes.rules.RideSharingInvolved({"offer_cache_communicator": OCC})
-        # create rule ruleTwoPassShared
-        self.ruleTwoPassShared = codes.rules.TwoPassShared(communicator_dict)
-        self.ruleThreePreviousEpisodesRS = codes.rules.ThreePreviousEpisodesRS(communicator_dict)
+        ruleRideSharingInvolved = codes.rules.RideSharingInvolved({"offer_cache_communicator": OCC}, incentive10discount)
+        ruleTwoPassShared = codes.rules.TwoPassShared(communicator_dict, incentiveTrainSeatUpgrade)
+        ruleThreePreviousEpisodesRS = codes.rules.ThreePreviousEpisodesRS(communicator_dict, incentive20discount)
 
         #
         # insert all created rules into the rule_list
         #
-        rule_list = [self.ruleRideSharingInvolved, self.ruleTwoPassShared, self.ruleThreePreviousEpisodesRS]
+        self.rule_list = [ruleRideSharingInvolved, ruleTwoPassShared, ruleThreePreviousEpisodesRS]
 
         #
         # create Incentive Provider
         #
-        self.incentiveProvider = IncentiveProvider(rule_list)
+        self.incentiveProvider = IncentiveProvider(self.rule_list)
 
     def getIncentives(self, data_dict):
         allIncentives = self.incentiveProvider.getEligibleIncentives(data_dict)

@@ -1,3 +1,4 @@
+import itertools
 from abc import ABC, abstractmethod
 import redis
 import r2r_offer_utils.cache_operations
@@ -44,9 +45,10 @@ class AgreementLedgerCommunicator(Communicator):
     def accessRuleData(self, dict_data):
         # obtain the data from Agreement ledger using request obtainer
         url = self.url_dict[dict_data['url']]
-        return self.requestObtainer.load_request(url, dict_data['id'])
-
-
+        req_answer = self.requestObtainer.load_request(url, dict_data['id'])
+        if req_answer is None:
+            logger.error("Value: None received from Agreement Ledger")
+        return req_answer
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -105,16 +107,88 @@ class OfferCacheCommunicator(Communicator):
         # if its a simple call
         else:
             try:
-                pipe = self.cache.pipeline()
-                pipe.lrange(f"{request_id}:offers", 0, -1)
-                pipe.get(f"{request_id}:{dict_data['offer_level_id']}")
-                pipe_list = pipe.execute()
-                pipe_res_dict = {
-                    "offer_ids": pipe_list[0],
-                    "traveller_id": pipe_list[1]
-                }
-                return pipe_res_dict
+                # pipe = self.cache.pipeline()
+                # pipe.lrange(f"{request_id}:offers", 0, -1)
+                # pipe.get(f"{request_id}:{dict_data['offer_level_id']}")
+                # pipe_list = pipe.execute()
+                # pipe_res_dict = {
+                #     "offer_ids": pipe_list[0],
+                #     "traveller_id": pipe_list[1]
+                # }
+                # return pipe_res_dict
+                return self.redis_request_level_item(request_id, dict_data["offer_level_keys"],
+                                                     dict_data["offer_level_types"])
             except KeyError:
                 return None
             except redis.exceptions.ConnectionError as exc:
-                logging.debug("Reading from cache by a feature collector failed")
+                logger.error(f"Reading from cache by a feature collector failed: {exc}")
+
+    def redis_request_level_item(self, request_id, request_level_keys, request_level_types):
+        """
+        Obtains the keys provided in request_level_keys from OfferCache, with types specified in request level types.
+        In case a wrong type of any key is provided, None is returned.
+        :param request_id: id of the request
+        :param request_level_keys: keys on the request level
+        :param request_level_types: types of the keys on the request level
+        :return: dictionary with a dictionary for each key
+        """
+        # dictionary of possible values
+        transl_dict = {"l": "list", "v": "value"}
+        pipe = self.cache.pipeline()
+        index_list = [] # list of indexed which were not skipped
+        res_dict = {} # dictionary for results
+        # iterate over the keys
+        for key, data_type, i in itertools.zip_longest(request_level_keys, request_level_types, range(0, len(request_level_keys))):
+            # if the key type is a valid type add it to the pipe, otherwise set the corresponding key as none
+            if data_type in transl_dict.keys():
+                self.redis_universal_get(pipe, request_id, key, data_type)
+                index_list.append(i)
+            else:
+                res_dict[key] = None
+        # execute the pipe
+        try:
+            pipe_res_list = pipe.execute()
+        # Raised if incorrect key types were provided
+        except redis.exceptions.ResponseError as re:
+            logger.error(f"Error when reading from cache, probably wrong data type: \n{re}")
+            return {}
+        # extract the data from the pipe to the dictionary, skips attributes with unexpected data type
+        for pipe_req, i in itertools.zip_longest(pipe_res_list, index_list):
+            res_dict[request_level_keys[i]] = pipe_req
+
+        return res_dict
+
+    def redis_universal_get(self, pipe, request_id, key, type):
+        if type == 'l':
+            pipe.lrange(f"{request_id}:{key}", 0, -1)
+        if type == 'v':
+            pipe.get(f"{request_id}:{key}")
+    """
+    Code in preparation below
+    """
+    def iterate_list(self, request_id, keys, types):
+        pipe = self.cache.pipeline()
+        res_dict = {}
+        for key, data_type in itertools.zip_longest(keys, types):
+            # if the key type is a valid type add it to the pipe, otherwise set the corresponding key as none
+            self.redis_universal_get(pipe, request_id, key, data_type)
+        try:
+            pipe_res_list = pipe.execute()
+        # Raised if incorrect key types were provided
+        except redis.exceptions.ResponseError as re:
+            logger.error(f"Error when reading from cache, probably wrong data type: \n{re}")
+            return None
+
+        for pipe_req, key in  itertools.zip_longest(pipe_res_list, keys):
+            res_dict[key] = pipe_req
+        return res_dict
+
+    def iterator_cache(self, request_id, request_level_keys, request_level_types,
+                             offer_level_keys, offer_level_types,
+                             item_level_iterator, item_level_keys, item_level_types):
+        request_res = self.iterate_list(self, request_id, request_level_keys, request_level_types)
+        for offer in request_res["offers"]:
+            offer_res = self.iterate_list(self, request_id + ":" + offer, offer_level_keys, offer_level_types)
+            for item in offer_res[item_level_iterator]:
+                item_res = self.iterate_list(self, request_id + ":" + offer + ":" + item,
+                                             item_level_keys, item_level_types)

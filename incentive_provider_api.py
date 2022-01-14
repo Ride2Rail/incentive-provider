@@ -97,6 +97,7 @@ def return_incentives():
 
 
 # curl -v -X GET http://127.0.0.1:5003/ALget/22b2b69f-567c-4e62-b791-476bb0cf3825
+# curl -v -X GET http://127.0.0.1:5003/ALget/d6452caf-759d-44dc-8667-0954ed879071
 @app.route('/ALget/<request_id>', methods=['GET'])
 def return_ALdata(request_id):
     """
@@ -118,6 +119,14 @@ def return_ALdata(request_id):
     #     logger.info("json returned succesfully")
     #     return response
     # return "{}",404
+
+# curl -v -X GET http://127.0.0.1:5003/rt/d6452caf-759d-44dc-8667-0954ed879071
+@app.route('/rt/<request_id>', methods=['GET'])
+def redis_test(request_id):
+    OCC = communicators.OfferCacheCommunicator(config)
+    res = OCC.redis_request_level_item(request_id, ["traveller_id","offers", "user_id"], ["v","l","v"])
+    return res, 200
+
 
 if __name__ == '__main__':
     FLASK_PORT = config.get('flask', 'port')

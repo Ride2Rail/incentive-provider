@@ -10,11 +10,12 @@ class Rule(ABC):
     # Why do we add name and key as class attributes (these are not used by RideSharingInvolved class)
     # would not be better to include it directly as constants only into the definition of methods that execute given rules?
 
-    def __init__(self, communicator_dict, name):
+    def __init__(self, communicator_dict, name, incentive):
         # communicator to get required data for rule evaluation
         self.communicator_dict  = communicator_dict
         self.name = name
         self.offer_dict         = {}
+        self.incentive = incentive
 
 
     def isFulfilled(self, data_dict):
@@ -27,8 +28,8 @@ class Rule(ABC):
 ########################################################################################################################
 ########################################################################################################################
 class TwoPassShared(Rule):
-    def __init__(self, communicator_dict):
-        super().__init__(communicator_dict, "TwoPassShared")
+    def __init__(self, communicator_dict, incentive):
+        super().__init__(communicator_dict, "TwoPassShared", incentive)
 
     def checkFulfilled(self, data_dict):
         # prepare request to the offer cache regarding transport modes linked to the travel offer items included in the
@@ -48,7 +49,7 @@ class TwoPassShared(Rule):
             try:
                 for offer_id in trip_offers_data["output_offer_level"]["offer_ids"]:
                     # loop over triplegs belonging to the offer item
-                    incentive = Incentive("trainSeatUpgrade", "Train seat upgrade")
+                    incentive = self.incentive.getIncentive()
                     for trip_leg_id in trip_offers_data["output_tripleg_level"][offer_id]["triplegs"]:
                         transportation_mode = trip_offers_data["output_tripleg_level"][offer_id][trip_leg_id]["transportation_mode"]
                         # if there is ridesharing add it to the set
@@ -80,16 +81,6 @@ class TwoPassShared(Rule):
             logger.error(f"Rule: TwoPassShared: No data extracted from the Offer cache.")
             return None
 
-    # From the Redis cache obtains the set of leg for the offer_id
-    def getCacheData(self, cache, offer_id):
-        leg_set = set()
-        pipe = cache.pipeline()
-        for offers in cache.lrange(f'{offer_id}:offers', 0, -1):
-            pipe.lrange(f'{offer_id}:{offers}:legs', 0, -1)
-
-        for offer in pipe.execute():
-            leg_set.update(offer)
-        return leg_set
 
 
 
@@ -98,8 +89,8 @@ class TwoPassShared(Rule):
 ########################################################################################################################
 class RideSharingInvolved(Rule):
 
-    def __init__(self, communicator_dict):
-        super().__init__(communicator_dict, "RideSharingInvolved")
+    def __init__(self, communicator_dict, incentive):
+        super().__init__(communicator_dict, "RideSharingInvolved", incentive)
 
     def checkFulfilled(self, data_dict):
 
@@ -121,7 +112,7 @@ class RideSharingInvolved(Rule):
             try:
                 for offer_id in trip_offers_data["output_offer_level"]["offer_ids"]:
                     # loop over triplegs belonging to the offer item
-                    incentive = Incentive("10discount", "10% discount")
+                    incentive = self.incentive.getIncentive()
                     for trip_leg_id in trip_offers_data["output_tripleg_level"][offer_id]["triplegs"]:
                         transportation_mode = trip_offers_data["output_tripleg_level"][offer_id][trip_leg_id]["transportation_mode"]
                         if transportation_mode == 'others-drive-car':
@@ -202,17 +193,21 @@ dict =  {'output_offer_level': {'offer_ids': ['cb32d4fe-47fd-4b2f-aefa-01251d2fe
 ########################################################################################################################
 class ThreePreviousEpisodesRS(Rule):
     # Required data: offer_id, <iterated> leg_id, traveller_id, transportation_mode
-    def __init__(self, communicator_dict):
-        super().__init__(communicator_dict, "ThreePreviousEpisodesRS")
+    def __init__(self, communicator_dict, incentive):
+        super().__init__(communicator_dict, "ThreePreviousEpisodesRS", incentive)
 
     def checkFulfilled(self, data_dict):
         logger.info(f"Rule: ThreePreviousEpisodesRS State: About to request data from the Offer cache using: "
                     f"communicator_data_dict={data_dict}")
         # obtain data about the trip offers and traveller id from the offer cache
         communicator_data_dict = {"request_id": data_dict["request_id"],
-                                  "offer_level_id": "traveller_id"
+                                  "offer_level_id": "traveller_id",
+                                  "offer_level_keys": ["offers", "traveller_id"],
+                                  "offer_level_types": ["l", "v"]
                                   }
         user_OC_data = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
+        # TODO: add the check if there is ridesharing
+
         # if OC data was sucesully obtained
         if user_OC_data is not None:
             # get data from agreement ledger
@@ -223,8 +218,8 @@ class ThreePreviousEpisodesRS(Rule):
             if req_res is None:
                 req_res = False
             ret_dict = {}
-            for offer_id in user_OC_data["offer_ids"]:
-                incentive = Incentive("20discount", "20% discount")
+            for offer_id in user_OC_data["offers"]:
+                incentive = self.incentive.getIncentive()
                 incentive.eligible = req_res
                 ret_dict[offer_id] = incentive
             return ret_dict
@@ -237,8 +232,16 @@ class ThreePreviousEpisodesRS(Rule):
 ########################################################################################################################
 ########################################################################################################################
 class Incentive:
-    def __init__(self, incentiveRankerID, description):
+    def __init__(self, incentiveRankerID, description, incentive_above=None):
         self.incentiveRankerID = incentiveRankerID
         self.description = description
         self.eligible = False
+        self.incentiveAbove = incentive_above
+
+    def getIncentive(self):
+        """
+        Factory method to create incentive
+        :return: new instance of the Incentive with the three attributes having the same value
+        """
+        return Incentive(self.incentiveRankerID, self.description, self.incentiveAbove)
 

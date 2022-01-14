@@ -77,12 +77,14 @@ class RequestObtainer:
             'accept': 'application/json'
         }
 
-    def load_request(self, url, id, key_attr = "check"):
+    def load_request(self, url, id, key_attr="check"):
         """
         authenticates and obtains the request from the API
         returns functions directly to the API
-        :param  url: url for the request
-                id: id as a parameter of URL in the get request
+        :param key_attr:
+        :param url: url for the request
+        :param id: id as a parameter of URL in the get request
+        :param key_attr: attribute to check in the received JSON
         :return: dictionary containing preference and user profile data, where each contains:
                     - whole request object if 200 was returned or
                     - MyResponse class in case of error if other than 200 returned
@@ -103,15 +105,12 @@ class RequestObtainer:
         response = requests.get(url + id, headers=headers_get)
 
         # check if the response has a proper format
-        if key_attr:
-            return self.checkResponse(response, key_attr, name=url)
-
-        return None
+        return self.checkResponse(response, key_attr, name=url)
 
     def checkResponse(self, response, key, name=""):
         if response.status_code == 200:
             try:
-                return self.checkKey(response.json(), key, ret_val=False)
+                return self.checkKey(response.json(), key, ret_val=None)
             except ValueError:
                 logger.error(f'Wrong type value of received from the {self.name}: {name}')
         else:
@@ -119,7 +118,7 @@ class RequestObtainer:
                 logger.error(f'Error {response.status_code} at {self.name}, response from server: {response.json()}')
             except ValueError:
                 logger.error(f'Error {response.status_code} received without a response in {self.name}')
-            return 0
+            return None
 
     def checkKey(self, json_dict, key, ret_val=None):
         if json_dict is None:

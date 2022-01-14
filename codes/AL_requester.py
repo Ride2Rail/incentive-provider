@@ -53,26 +53,25 @@ class RequestObtainer:
     class for obtaining the requests from preference api
     """
 
-    def __init__(self, config, name = "", auth_cfg = None):
+    def __init__(self, name="", auth_config=None):
         """
         :param name: Name of the request obtainer
-        :param auth_cfg: dictionary with authentication details
+        :param auth_config: dictionary with authentication details
         """
         # creates authentication token object
-        self.token_obtainer     = AuthTokenObtainer()
-        self.auth_token         = None
-        self.name               = name
+        self.token_obtainer = AuthTokenObtainer()
+        self.auth_token = None
+
+        self.name = name
 
         # extract authentication url and secret
         try:
- #           self.url_auth = auth_cfg["auth_url"]
-            auth_secret   = auth_cfg['auth_secret']
-            # self.url_auth = config.get('agreement_ledger_api', 'auth_url')
-            # auth_secret = config.get('auth', 'basic_secret')
+            self.url_auth = auth_config["auth_url"]
+            auth_secret = auth_config['auth_secret']
         except KeyError as ke:
-            logger.error(f"Missing key {e} in authentication dictionary of request obtainer of {self.name}")
+            logger.error(f"Missing key {ke} in authentication dictionary of request obtainer of {self.name}")
             return
-        # obtains values from config for the authentication
+        # create authentication header
         self.headers_auth = {
             'Authorization': f'Basic {auth_secret}',
             'accept': 'application/json'
@@ -112,7 +111,7 @@ class RequestObtainer:
     def checkResponse(self, response, key, name=""):
         if response.status_code == 200:
             try:
-                return int(self.checkKey(response.json(), key, ret_val=0))
+                return self.checkKey(response.json(), key, ret_val=False)
             except ValueError:
                 logger.error(f'Wrong type value of received from the {self.name}: {name}')
         else:

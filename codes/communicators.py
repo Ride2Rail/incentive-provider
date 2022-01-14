@@ -24,15 +24,22 @@ class Communicator(ABC):
 ########################################################################################################################
 ########################################################################################################################
 class AgreementLedgerCommunicator(Communicator):
-    def __init__(self, data):
+    def __init__(self, config, data=None):
         super().__init__(data)
-        config = data["config"]
+        # config = data["config"]
         # objects required for requests
-        self.url_dict = {
-            "disc20_url": config.get('agreement_ledger_api', 'disc20_url'),
-            "upgrSeat_url": config.get('agreement_ledger_api', 'upgrSeat_url')
-        }
-        self.requestObtainer = RequestObtainer(config, "AgreementLedgerObtainer")
+        if config is not None:
+            self.url_dict = {
+                "disc20_url": config.get('agreement_ledger_api', 'disc20_url'),
+                "upgrSeat_url": config.get('agreement_ledger_api', 'upgrSeat_url')
+            }
+            auth_config = {
+                'auth_url': config.get('agreement_ledger_api', 'auth_url'),
+                'auth_secret': config.get('auth', 'basic_secret')
+            }
+            self.requestObtainer = RequestObtainer("AgreementLedgerObtainer", auth_config)
+        else:
+            logger.error('Could not read config file in communicators.py')
 
     def accessRuleData(self, dict_data):
         # obtain the data from Agreement ledger using request obtainer
@@ -53,7 +60,7 @@ class OfferCacheCommunicator(Communicator):
         Establish connection with the offer cache.
     """
 
-    def __init__(self, config, data):
+    def __init__(self, config, data=None):
         # get the ports
         super().__init__(data)
         if config is not None:

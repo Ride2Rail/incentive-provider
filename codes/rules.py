@@ -10,30 +10,25 @@ class Rule(ABC):
     # Why do we add name and key as class attributes (these are not used by RideSharingInvolved class)
     # would not be better to include it directly as constants only into the definition of methods that execute given rules?
 
-    def __init__(self, communicator_dict):
+    def __init__(self, communicator_dict, name):
         # communicator to get required data for rule evaluation
         self.communicator_dict  = communicator_dict
-        self.fulfilled          = None
+        self.name = name
+        self.offer_dict         = {}
+
+
+    def isFulfilled(self, data_dict):
+        self.offer_dict = self.checkFulfilled(data_dict)
 
     @abstractmethod
-    def isFulfilled(self, data_dict):
-        pass
-
     def checkFulfilled(self, data_dict):
-        return None
+        pass
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
 class TwoPassShared(Rule):
     def __init__(self, communicator_dict):
-        super().__init__(communicator_dict)
-        self.name = ""
-        self.key  = ""
-        self.communicator_dict = {}
-
-    def isFulfilled(self, data_dict):
-        return self.checkFulfilled(data_dict)
-
+        super().__init__(communicator_dict, "TwoPassShared")
 
     def checkFulfilled(self, data_dict):
         # prepare request to the offer cache regarding transport modes linked to the travel offer items included in the
@@ -67,11 +62,12 @@ class TwoPassShared(Rule):
                                     "url": "upgrSeat_url",
                                     "id": trip_leg_id
                                 })
-                                # if AL answered, add the answer to the dictionary recording checked triplegs
+                                # if AL received proper answer
+                                # add the answer to the dictionary recording checked triplegs
                                 if req_res is not None:
-                                    tripleg_id_dict[trip_leg_id] = req_res['check']
-                                    # if true add incentive as checked
-                                    if req_res['check']:
+                                    tripleg_id_dict[trip_leg_id] = req_res
+                                    # if answer was true, set the incentive as checked and break the loop
+                                    if req_res:
                                         incentive.eligible = True
                                         break
                     result[offer_id] = incentive
@@ -101,8 +97,9 @@ class TwoPassShared(Rule):
 ########################################################################################################################
 ########################################################################################################################
 class RideSharingInvolved(Rule):
-    def isFulfilled(self, data_dict):
-        return self.checkFulfilled(data_dict)
+
+    def __init__(self, communicator_dict):
+        super().__init__(communicator_dict, "RideSharingInvolved")
 
     def checkFulfilled(self, data_dict):
 
@@ -206,12 +203,7 @@ dict =  {'output_offer_level': {'offer_ids': ['cb32d4fe-47fd-4b2f-aefa-01251d2fe
 class ThreePreviousEpisodesRS(Rule):
     # Required data: offer_id, <iterated> leg_id, traveller_id, transportation_mode
     def __init__(self, communicator_dict):
-        super().__init__(communicator_dict)
-        self.name = "20discount"
-        self.key = "travellerId"
-
-    def isFulfilled(self, data_dict):
-        return self.checkFulfilled(data_dict)
+        super().__init__(communicator_dict, "ThreePreviousEpisodesRS")
 
     def checkFulfilled(self, data_dict):
         logger.info(f"Rule: ThreePreviousEpisodesRS State: About to request data from the Offer cache using: "
@@ -231,9 +223,11 @@ class ThreePreviousEpisodesRS(Rule):
             if req_res is None:
                 req_res = False
             ret_dict = {}
-            for offer_id in user_OC_data["traveller_id"]:
-                ret_dict[offer_id] = req_res
-            return req_res
+            for offer_id in user_OC_data["offer_ids"]:
+                incentive = Incentive("20discount", "20% discount")
+                incentive.eligible = req_res
+                ret_dict[offer_id] = incentive
+            return ret_dict
         else:
             logger.error(f"Rule: ThreePreviousEpisodesRS: No data extracted from the Offer cache.")
             return None

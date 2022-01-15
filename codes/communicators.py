@@ -1,5 +1,7 @@
 import itertools
 from abc import ABC, abstractmethod
+from functools import wraps
+
 import redis
 import r2r_offer_utils.cache_operations
 import logging
@@ -163,8 +165,11 @@ class OfferCacheCommunicator(Communicator):
             pipe.lrange(f"{request_id}:{key}", 0, -1)
         if type == 'v':
             pipe.get(f"{request_id}:{key}")
+
     """
-    Code in preparation below
+    ###############################################
+        Experimental code in preparation below
+    ###############################################
     """
     def iterate_list(self, request_id, keys, types):
         pipe = self.cache.pipeline()
@@ -186,9 +191,60 @@ class OfferCacheCommunicator(Communicator):
     def iterator_cache(self, request_id, request_level_keys, request_level_types,
                              offer_level_keys, offer_level_types,
                              item_level_iterator, item_level_keys, item_level_types):
-        request_res = self.iterate_list(self, request_id, request_level_keys, request_level_types)
+        request_res = self.iterate_list(request_id, request_level_keys, request_level_types)
         for offer in request_res["offers"]:
-            offer_res = self.iterate_list(self, request_id + ":" + offer, offer_level_keys, offer_level_types)
+            offer_res = self.iterate_list(request_id + ":" + offer, offer_level_keys, offer_level_types)
             for item in offer_res[item_level_iterator]:
-                item_res = self.iterate_list(self, request_id + ":" + offer + ":" + item,
+                item_res = self.iterate_list(request_id + ":" + offer + ":" + item,
                                              item_level_keys, item_level_types)
+
+    def piped_iterator(self, request_id, request_level_keys, request_level_types,
+                             offer_level_keys, offer_level_types,
+                             item_level_iterator, item_level_keys, item_level_types):
+        request_res = self.iterate_list(request_id, request_level_keys, request_level_types)
+        for offer in request_res["offers"]:
+            offer_res = self.iterate_list(request_id + ":" + offer, offer_level_keys, offer_level_types)
+
+    def pipe_wrapper(self, func):
+        """
+        wraps the passed function with Redis pipes
+        """
+        def wrapper(*args):
+            pipe = self.cache.pipeline()
+            func(pipe, *args)
+            try:
+                res = pipe.execute()
+                return res
+            except redis.RedisError as re:
+                logger.error(f"Error when executing cache pipe: {re}")
+            return None
+
+        return wrapper
+    """
+    @pipe_wrapper
+    def iterate_list_piped(self, pipe, request_id, keys, types):
+        for key, data_type in itertools.zip_longest(keys, types):
+            # if the key type is a valid type add it to the pipe, otherwise set the corresponding key as none
+            self.redis_universal_get(pipe, request_id, key, data_type)
+    """
+    def pipe_execturor(self, pipe):
+        try:
+            res = pipe.execute()
+            return res
+        except redis.RedisError as re:
+            logger.error(f"Error when executing cache pipe: {re}")
+        return None
+
+    def extract_data(self, request_id, request_level_keys, request_level_types,
+                             offer_level_keys, offer_level_types,
+                             item_level_iterator, item_level_keys, item_level_types):
+        #
+        request_res = self.iterate_list(request_id, request_level_keys, request_level_types)
+
+        pipe = self.cache.pipeline()
+        for offer in request_res["offers"]:
+            offer_res = self.iterate_list(request_id + ":" + offer, offer_level_keys, offer_level_types)
+            for key, data_type in itertools.zip_longest(offer_level_keys, offer_level_types):
+                # if the key type is a valid type add it to the pipe, otherwise set the corresponding key as none
+                self.redis_universal_get(pipe, request_id, key, data_type)
+        self.pipe_execturor(pipe)

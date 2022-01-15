@@ -201,15 +201,15 @@ class ThreePreviousEpisodesRS(Rule):
                     f"communicator_data_dict={data_dict}")
         # obtain data about the trip offers and traveller id from the offer cache
         communicator_data_dict = {"request_id": data_dict["request_id"],
-                                  "offer_level_id": "traveller_id",
                                   "offer_level_keys": ["offers", "traveller_id"],
                                   "offer_level_types": ["l", "v"]
                                   }
         user_OC_data = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
-        # TODO: add the check if there is ridesharing
 
-        # if OC data was sucesully obtained
-        if user_OC_data is not None:
+        # check for ridesharing
+        offer_rs_dict = self.checkRidesharing(data_dict)
+        # if OC data was sucesully obtained and if there is at least one ridesharing leg
+        if user_OC_data is not None and any(offer_rs_dict.values()):
             # get data from agreement ledger
             req_res = self.communicator_dict["AL_communicator"].accessRuleData({
                 "url": "disc20_url",
@@ -218,15 +218,51 @@ class ThreePreviousEpisodesRS(Rule):
             if req_res is None:
                 req_res = False
             ret_dict = {}
-            for offer_id in user_OC_data["offers"]:
+            for offer_id in offer_rs_dict.keys():
                 incentive = self.incentive.getIncentive()
-                incentive.eligible = req_res
+                # if there is ridesharing and the rider had
+                incentive.eligible = req_res and offer_rs_dict[offer_id]
                 ret_dict[offer_id] = incentive
             return ret_dict
         else:
             logger.error(f"Rule: ThreePreviousEpisodesRS: No data extracted from the Offer cache.")
             return None
 
+    def checkRidesharing(self, data_dict):
+        communicator_data_dict = {"request_id": data_dict["request_id"],
+                                  "list_offer_level_keys": [],
+                                  "list_tripleg_level_keys": ["transportation_mode"]}
+
+        logger.info(f"Rule: ThreePreviousEpisodesRS State: About to request data from the Offer cache using: "
+                    f"communicator_data_dict={communicator_data_dict}")
+        # obtain data about the trip offers from the offer cache
+        trip_offers_data = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
+
+        logger.info(f"Rule: ThreePreviousEpisodesRS State: Data extracted from the Offer cache."
+                    f" trip_offers_data={trip_offers_data}")
+
+        if trip_offers_data is not None:
+            # Process obtained data and evaluated id Offer items associated with the requuest are entitled to receive incentive
+            # loop over travel offer items
+            offer_dict = {}
+            try:
+                for offer_id in trip_offers_data["output_offer_level"]["offer_ids"]:
+                    # loop over triplegs belonging to the offer item
+                    offer_dict[offer_id] = False
+                    for trip_leg_id in trip_offers_data["output_tripleg_level"][offer_id]["triplegs"]:
+                        transportation_mode = trip_offers_data["output_tripleg_level"][offer_id][trip_leg_id][
+                            "transportation_mode"]
+                        if transportation_mode == 'others-drive-car':
+                            offer_dict[offer_id] = True
+                            break
+                return offer_dict
+            except KeyError:
+                logger.error(
+                    f"Rule: RideSharingInvolved State: Offer cache data cannot be used to determine applicability of the incentive.")
+                return None
+        else:
+            logger.error(f"Rule: RideSharingInvolved State: No data extracted from the Offer cache.")
+            return None
 
 ########################################################################################################################
 ########################################################################################################################

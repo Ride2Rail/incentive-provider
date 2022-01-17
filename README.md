@@ -37,9 +37,34 @@ The module "Incentive provider" can be launched from the terminal locally by run
 
 ```JSON
 {
-}
+    "36e5c5b9-b434-40c4-8017-9ec79578813a": {
+        "10discount": true,
+        "trainSeatUpgrade": true,
+        "20discount": false
+    },
+    "ef9012a8-918b-4e20-a724-rs1": {
+        "10discount": true,
+        "trainSeatUpgrade": true,
+        "20discount": false
+    },
+    "731d2c82-e158-4d87-8cd6-df9bbcc647e6": {
+        "10discount": false,
+        "trainSeatUpgrade": false,
+        "20discount": false
+    },
+    "5c08395c-7efc-4418-a2dc-c2794e7120f6": {
+        "10discount": true,
+        "trainSeatUpgrade": true,
+        "20discount": false
+    },
+    "c421d948-8741-4b33-8797-3871ec8b3b7f": {
+        "10discount": false,
+        "trainSeatUpgrade": false,
+        "20discount": false
+    }
+* Closing connection 0
+(base)
 ```
-
 
 
 

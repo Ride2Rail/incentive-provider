@@ -26,6 +26,22 @@ For a given _request_id_ the corresponding list of travel offers and their and t
 # Usage
 
 ## Local development (debug on)
+The module "Incentive provider" can be launched from the terminal locally by running the script "incentive_provider_api.py":
+```bash
+2022-01-17 11:29:45 - incentive_provider_api - INFO - config loaded successfully
+ * Serving Flask app 'incentive_provider_api' (lazy loading)
+ * Environment: development
+ * Debug mode: on
+ * Running on http://127.0.0.1:5003/ (Press CTRL+C to quit)
+```
+
+```JSON
+{
+}
+```
+
+
+
 
 ## Response
 

@@ -17,6 +17,15 @@ app             = Flask(service_name)
 # curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=569e2e80-4e7f-41b5-a8ef-b3a686abe224"
 
 
+#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=76704113-6ad8-43d5-a7cc-55e48450232a"
+#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=c90281fd-6fa6-4c2d-97bd-a86614575e0f"
+
+
+
+
+#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=97b558d0-4093-47ec-90ad-cf5903586a08"
+#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=939a09ff-4e8f-40d3-9a6f-4aac0d6622f9"
+#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=b6b26660-1326-4b6b-bf00-132ec7e576de"
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -84,9 +93,9 @@ def return_incentives():
     output  =  IPM.getIncentives({"request_id":request_id})
     # print output on the screen (only for testing purposes)
     if output is not None:
-        for rule_output in output:
-            for key in rule_output:
-                print(f"KEY={key}, incetive={rule_output[key].incentiveRankerID}, eligible={rule_output[key].eligible}")
+        for key in output:
+            for incentive in output[key]:
+                print(f"KEY={key}, incetive={incentive}, eligible={output[key][incentive]}")
 
             #print(f"KEY={key}, incentive={output[key].eligible}")
 

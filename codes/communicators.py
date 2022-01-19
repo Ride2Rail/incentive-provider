@@ -151,7 +151,7 @@ class OfferCacheCommunicator(Communicator):
         try:
             pipe_res_list = pipe.execute()
         # Raised if incorrect key types were provided
-        except redis.exceptions.ResponseError as re:
+        except redis.exceptions.RedisError as re:
             logger.error(f"Error when reading from cache, probably wrong data type: \n{re}")
             return {}
         # extract the data from the pipe to the dictionary, skips attributes with unexpected data type
@@ -180,7 +180,7 @@ class OfferCacheCommunicator(Communicator):
         try:
             pipe_res_list = pipe.execute()
         # Raised if incorrect key types were provided
-        except redis.exceptions.ResponseError as re:
+        except redis.exceptions.RedisError as re:
             logger.error(f"Error when reading from cache, probably wrong data type: \n{re}")
             return None
 

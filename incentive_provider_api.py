@@ -9,6 +9,9 @@ import json
 service_name    = os.path.splitext(os.path.basename(__file__))[0]
 app             = Flask(service_name)
 
+logger = logging.getLogger(service_name)
+config = ConfigLoader(LoggerFormatter(logger), service_name).config
+
 #
 # Testing examples
 #
@@ -39,7 +42,11 @@ def return_incentives():
         for key in output:
             for incentive in output[key]:
                 logger.info(f"KEY={key}, incetive={incentive}, eligible={output[key][incentive]}")
-    return json.dumps(output, indent = 4), 200
+    wrap_res = {
+        "offers": output,
+        "request_id": request_id
+    }
+    return json.dumps(wrap_res, indent = 4), 200
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################

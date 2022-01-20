@@ -1,7 +1,10 @@
 import json
+import logging
+
 import requests
 from datetime import datetime, timedelta, timezone
-from r2r_offer_utils.advanced_logger import logger
+
+logger = logging.getLogger()
 
 
 # class to obtain the authentication token

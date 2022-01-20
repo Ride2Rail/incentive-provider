@@ -2,9 +2,8 @@ from abc import abstractmethod, ABC
 import logging
 
 logger = logging.getLogger('incentive_provider_api.rules')
-########################################################################################################################
-########################################################################################################################
-########################################################################################################################
+
+
 class Rule(ABC):
     # QUESTION:
     # Why do we add name and key as class attributes (these are not used by RideSharingInvolved class)
@@ -24,6 +23,10 @@ class Rule(ABC):
     @abstractmethod
     def checkFulfilled(self, data_dict):
         pass
+
+    def wrapOCcommunication(self):
+        pass
+
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################
@@ -42,7 +45,7 @@ class TwoPassShared(Rule):
         # obtain data about the trip offers from the offer cache
         trip_offers_data = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
 
-        if trip_offers_data is not None:
+        if trip_offers_data is not None and not self.communicator_dict["offer_cache_communicator"].check_empty_dict(trip_offers_data):
             # Process obtained data and evaluated id Offer items associated with the requuest are entitled to receive incentive
             tripleg_id_dict = {}
             result = {}
@@ -76,12 +79,9 @@ class TwoPassShared(Rule):
 
             except KeyError:
                 logger.error(f"Rule: TwoPassShared: Offer cache data cannot be used to determine applicability of the incentive.")
-                return None
         else:
             logger.error(f"Rule: TwoPassShared: No data extracted from the Offer cache.")
-            return None
-
-
+        return {"no_offer": self.incentive}
 
 
 ########################################################################################################################
@@ -105,7 +105,7 @@ class RideSharingInvolved(Rule):
         trip_offers_data            = self.communicator_dict["offer_cache_communicator"].accessRuleData(communicator_data_dict)
 
         logger.info(f"Rule: RideSharingInvolved State: Data extracted from the Offer cache. trip_offers_data={trip_offers_data}")
-        if trip_offers_data is not None:
+        if trip_offers_data is not None and not self.communicator_dict["offer_cache_communicator"].check_empty_dict(trip_offers_data):
             # Process obtained data and evaluated id Offer items associated with the requuest are entitled to receive incentive
             # loop over travel offer items
             result = {}
@@ -122,10 +122,9 @@ class RideSharingInvolved(Rule):
                 return result
             except KeyError:
                 logger.error(f"Rule: RideSharingInvolved State: Offer cache data cannot be used to determine applicability of the incentive.")
-                return None
         else:
             logger.error(f"Rule: RideSharingInvolved State: No data extracted from the Offer cache.")
-            return None
+        return {"no_offer": self.incentive}
 
 
 ########################################################################################################################
@@ -149,7 +148,7 @@ class ThreePreviousEpisodesRS(Rule):
         # check for ridesharing
         offer_rs_dict = self.checkRidesharing(data_dict)
         # if OC data was sucesully obtained and if there is at least one ridesharing leg
-        if user_OC_data is not None and any(offer_rs_dict.values()):
+        if user_OC_data is not None and offer_rs_dict is not None and any(offer_rs_dict.values()):
             # get data from agreement ledger
             req_res = self.communicator_dict["AL_communicator"].accessRuleData({
                 "url": "disc20_url",
@@ -166,7 +165,7 @@ class ThreePreviousEpisodesRS(Rule):
             return ret_dict
         else:
             logger.error(f"Rule: ThreePreviousEpisodesRS: No data extracted from the Offer cache.")
-            return None
+            return {"no_offer": self.incentive}
 
     def checkRidesharing(self, data_dict):
         communicator_data_dict = {"request_id": data_dict["request_id"],
@@ -181,7 +180,7 @@ class ThreePreviousEpisodesRS(Rule):
         logger.info(f"Rule: ThreePreviousEpisodesRS State: Data extracted from the Offer cache."
                     f" trip_offers_data={trip_offers_data}")
 
-        if trip_offers_data is not None:
+        if trip_offers_data is not None and not self.communicator_dict["offer_cache_communicator"].check_empty_dict(trip_offers_data):
             # Process obtained data and evaluated id Offer items associated with the requuest are entitled to receive incentive
             # loop over travel offer items
             offer_dict = {}

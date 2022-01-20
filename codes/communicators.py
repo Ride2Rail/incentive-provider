@@ -166,6 +166,17 @@ class OfferCacheCommunicator(Communicator):
         if type == 'v':
             pipe.get(f"{request_id}:{key}")
 
+    def check_empty_dict(self, dict):
+        """
+        Check if the received OC dictionary has empty fields
+        :param dict:
+        :return:
+        """
+        try:
+            return dict['output_offer_level']['offer_ids'] == [] or dict['output_offer_level']['offer_ids'] == {}
+        except KeyError as ke:
+            logger.error(f"Key was missing in received OC data: {ke}")
+            return True
     """
     ###############################################
         Experimental code in preparation below

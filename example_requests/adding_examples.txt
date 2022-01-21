@@ -1,8 +1,9 @@
 Examples for adding data to cache
 
 Request generated from files:
-subset_3_no_3_tsp_025-xml - 22b2b69f-567c-4e62-b791-476bb0cf3825
-subset_3_no_3_tsp_075.xml - d6452caf-759d-44dc-8667-0954ed879071
+subset_3_no_3_tsp_025-xml - 1aa4cc2e-d43b-46ce-814f-cee20e147656
+subset_3_no_3_tsp_075.xml - db1a7838-9c51-4e55-b216-bd3fca1a50ce
+subset_3_no_3_tsp_050-request_data.xml - c8f16867-6e99-4235-aa63-859b155b5df0
 
 POST: https://ledger.r2r.inlecom.eu/api/#/booking/addBooking
 {

@@ -1,6 +1,7 @@
 import codes.rules
 import codes.communicators as communicators
 import logging
+from functools import wraps
 
 logger = logging.getLogger('incentive_provider_api.incentive_provider')
 
@@ -22,17 +23,35 @@ class IncentiveProvider:
             rule.isFulfilled(data_dict)
         return self.reshapeRuleDicts()
 
-    def consistencyCheck(self, allIncentives):
-        #
-        # checks the incentives, if there is a higher incentive, sets the lesser incentive as non eligible
-        #
-        try:
-            for key in allIncentives.keys():
-                if allIncentives[key]["10discount"] and allIncentives[key]["20discount"]:
-                    allIncentives[key]["10discount"] = False
-        except KeyError as ke:
-            logger.error(f"Key missing in Incentive provider: {ke}")
-        return allIncentives
+    def incentiveIterWrapper(fun):
+        @wraps(fun)
+        def wrap(self, allIncentives):
+            try:
+                for key in allIncentives.keys():
+                    for incentive_name in allIncentives[key].keys():
+                        # check if there is a higher priority rule and if it is eligible, set the lesser rule eligibility
+                        # to false
+                        fun(self, allIncentives, key, incentive_name)
+            except KeyError as ke:
+                logger.error(f"Key missing in Incentive provider: {ke}")
+            return allIncentives
+        return wrap
+
+    @incentiveIterWrapper
+    def consistencyCheck(self, allIncentives, key, incentive_name):
+        """
+        replaces the incentive with its boolean value
+        """
+        if allIncentives[key][incentive_name].incentiveAbove is not None and \
+                allIncentives[key][allIncentives[key][incentive_name].incentiveAbove].eligible:
+            allIncentives[key][incentive_name].eligible = False
+
+    @incentiveIterWrapper
+    def extractBooleanValues(self, allIncentives, key, incentive_name):
+        """
+        replaces the incentive with its boolean value
+        """
+        allIncentives[key][incentive_name] = allIncentives[key][incentive_name].eligible
 
     def reshapeRuleDicts(self):
         """
@@ -54,7 +73,7 @@ class IncentiveProvider:
             for rule in self.ruleList:
                 try:
                     incentive_name = rule.offer_dict[offer_id].incentiveRankerID
-                    offer_dict[offer_id][incentive_name] = rule.offer_dict[offer_id].eligible
+                    offer_dict[offer_id][incentive_name] = rule.offer_dict[offer_id] #.eligible
                 except KeyError as ke:
                     logging.error(f"Missing result for offer {offer_id} when processing rule {rule.name} "
                                   f"in the IncentiveProvider class")
@@ -99,8 +118,8 @@ class IncentiveProviderManager:
 
     def getIncentives(self, data_dict):
         allIncentives = self.incentiveProvider.getEligibleIncentives(data_dict)
-        return self.incentiveProvider.consistencyCheck(allIncentives)
-
+        allIncentives = self.incentiveProvider.consistencyCheck(allIncentives)
+        return self.incentiveProvider.extractBooleanValues(allIncentives)
 
 class TravelOfferIterator:
     def __init__(self):

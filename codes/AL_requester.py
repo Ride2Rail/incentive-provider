@@ -53,7 +53,7 @@ class AuthTokenObtainer:
 
 class RequestObtainer:
     """
-    class for obtaining the requests from preference api
+    class to execute a request to an external end-point
     """
 
     def __init__(self, name="", auth_config=None):

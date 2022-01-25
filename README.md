@@ -1,36 +1,102 @@
 # Incentive provider
 
-This module pre-evaluates the eligibility to receive travel incentives. The incentives 
-are associated with travel offers. Current version supports incentives listed in the following Table:
+This R2R module pre-evaluates the eligibility to receive travel incentives. The incentives 
+are associated with travel offers. Current version supports the incentives listed in the following Table:
 
 | Incentive | Description |
 |:---------:|-------------|
-|     10%Discount     | The incentive is associated with a travel offer item if at least one ride-sharing leg is included in any travel offer item.       |
-|     20%Discount     | The incentive is associated with a travel offer item if the offer item contains at least one ride-sharing leg and the passenger completed at least 3 ride-shares. The counter of completed ride-shares is set to zero after allocating the incentive.  |
-|      FreeSeat       | The incentive is associated with a travel offer item if at least one other passenger booked at least one of the ride-shares included in the travel offer item. |
+|     10%Discount     | The incentive is associated with a travel offer item, if at least one ride-sharing leg is included in any travel offer item.       |
+|     20%Discount     | The incentive is associated with a travel offer item, if the offer item contains at least one ride-sharing leg and the passenger completed at least three ride-shares. The counter of completed ride-shares is set to zero after allocating the incentive.  |
+|      FreeSeat       | The incentive is associated with a travel offer item, if at least one other passenger booked at least one of the ride-shares included in the travel offer item. |
 
 ## Calculation of incentives
 
 ### Incentive 10%Discount
 For a given _request_id_, the corresponding list of travel offer items and the transport modes associated with 
 legs are obtained from the [offer-cache](https://github.com/Ride2Rail/offer-cache).
-Based on this data, the presence of ride sharing legs is analysed, in the method _checkFulfilled()_ of the class _RideSharingInvolved_ 
+Based on this data, the presence of ride-sharing legs is analysed, in the method _checkFulfilled()_ of the class _RideSharingInvolved_ 
 implemented in the script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py).
 
 ### Incentive 20%Discount
 For a given _request_id_, the corresponding list of travel offer items, Traveler ID and the transport modes associated with 
 legs are obtained from the [offer-cache](https://github.com/Ride2Rail/offer-cache). 
-If an offer items contains a ridesharing leg, Traveler ID is used to requested the Agreement Ledger 
-module to provide infomration about the eligibility to receive 20%Discount incentive. Otherwise, it is concluded that
+If an offer item contains a ride-sharing leg, Traveler ID is used to request the Agreement Ledger 
+module to obtain information about the eligibility to receive 20%Discount incentive. Otherwise, it is concluded that
 offer item is concluded to be not eligible for this incentive. The evaluation is implemented by 
 the method checkFulfilled()_ of the class _ThreePreviousEpisodesRS_ 
 implemented in the script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py).
 
 ### Incentive FreeSeat
+For a given _request_id_, the corresponding list of trip leg IDs and the corresponding transport modes are obtained from the [offer-cache](https://github.com/Ride2Rail/offer-cache). 
+If an offer item contains a ride-sharing leg, Trip leg ID is used to request the Agreement Ledger 
+module to obtain information about the eligibility to receive FreeSeat incentive, and it is outputted. Otherwise, it is concluded that
+offer item is concluded to be not eligible for this incentive. The evaluation is implemented by 
+the method checkFulfilled()_ of the class _TwoPassShared_ implemented in the script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py).
 
 
 
 # Implementation
+Incentive provider module is implemented by classes that are presented in the following figure.
+![Class diagram.](figures/class_diagram.png "Class diagram.").
+
+## Script [communicators.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/communicators.py)
+The script implements communicators. A Communicator is a class ensuring interaction with an external service.
+
+### Class Communicator
+The class _Communicator_ is an abstract class serving as a common predecessor.
+
+### Class AgreementLedgerCommunicator
+The class _AgreementLedgerCommunicator_ ensures sending of request to the Agreement Ledger. It implements 
+reading of urls and of other parameters from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
+Further, the creates an instance of the class _RequestObtainer_ that ensures exacution of requests. 
+The request is executed by the method _accessRuleData()_.
+
+### Class OfferCacheCommunicator
+The class _OfferCacheCommunicator_ ensures sending of request to get values of attributes to the [offer-cache](https://github.com/Ride2Rail/offer-cache).
+It implements  reading of the host address and port from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf)
+that are required to establish a connection with the offer-cache and the connection is 
+established. The request to obtain data from the offer-cache is executed by calling the sequence of 
+methods that are implemented by this class. By calling the method _accessRuleData()_, the request to get data from the offer-cache is 
+executed. Depended on the level of requested data, methods _read_data_from_offer_cache()_ and _redis_request_level_item()_
+are called. The method _read_data_from_offer_cache()_ ensures calling of the method _read_data_from_cache_wrapper()_ from the
+package _r2r_offer_utils_ that for a given _request_id_ reads the required attribute values at the levels of offer items and trip legs.
+The method _redis_request_level_item()_ reads the required values of attributes at the level of the mobility request.
+
+## Script [AL_requester.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/AL_requester.py)
+The script implements classes ensuring interaction (authetication and sending of request) with external services (i.e., Agreement Ledger).
+
+### Class AuthTokenObtainer
+The class implements acquisition and renewal of the communication token from a login in end-point.
+The url and headers need to be provided as parameters.
+
+### Class RequestObtainer
+The class executes requests to an external end-point. It reads the parameters of the authentication end-point from the 
+configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
+It created an instance of the class _AuthTokenObtainer_ that ensures acquisition of the communication token.
+The method _load_request()_ executes authentication and the request to the external service. 
+The handling and logging of error situations is separated in the method _checkResponse()_.
+
+### Class MyResponse
+The class is used to wrap up the response of methods that ensure communication with external services. 
+In addition, it takes care of logging the errors, which is the  functionality that is also sometimes used and an instance of the class is created for this purpose.
+
+
+## Script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py)
+### Class Rule
+
+### Class TwoPassShared
+
+### Class RideSharingInvolved
+
+### Class ThreePreviousEpisodesRS
+
+### Class Incentive
+
+## Script [incentive_provider.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider.py)
+### Class IncentiveProvider
+
+### Class IncentiveProviderManager
+
 
 # Usage
 

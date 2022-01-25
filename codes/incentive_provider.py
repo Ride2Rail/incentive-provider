@@ -120,7 +120,3 @@ class IncentiveProviderManager:
         allIncentives = self.incentiveProvider.getEligibleIncentives(data_dict)
         allIncentives = self.incentiveProvider.consistencyCheck(allIncentives)
         return self.incentiveProvider.extractBooleanValues(allIncentives)
-
-class TravelOfferIterator:
-    def __init__(self):
-        pass

@@ -43,7 +43,8 @@ Incentive provider module is implemented by classes that are presented in the fo
 The script implements communicators. A Communicator is a class ensuring interaction with an external service.
 
 ### Class Communicator
-The class _Communicator_ is an abstract class serving as a common predecessor.
+The class _Communicator_ is an abstract class serving as a common predecessor for classed that implement communication 
+with external services.
 
 ### Class AgreementLedgerCommunicator
 The class _AgreementLedgerCommunicator_ ensures sending of request to the Agreement Ledger. It implements 

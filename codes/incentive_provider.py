@@ -37,19 +37,21 @@ class IncentiveProvider:
             return allIncentives
         return wrap
 
-    @incentiveIterWrapper
+    @incentiveIterWrapper #decorator ensures calling of the function on every offer item and incentive and logging of errors
     def consistencyCheck(self, allIncentives, key, incentive_name):
         """
-        replaces the incentive with its boolean value
+        cancel the incentive if there was assigned subordinate incentive that is not compatible with this one
         """
         if allIncentives[key][incentive_name].incentiveAbove is not None and \
                 allIncentives[key][allIncentives[key][incentive_name].incentiveAbove].eligible:
             allIncentives[key][incentive_name].eligible = False
 
-    @incentiveIterWrapper
+    @incentiveIterWrapper #decorator ensures calling of the function on every offer item and incentive and logging of errors
     def extractBooleanValues(self, allIncentives, key, incentive_name):
         """
         replaces the incentive with its boolean value
+        it is done as the last step before outputting the results of the incentive pre-evaluation
+        as only boolean values are sufficient to be outputted
         """
         allIncentives[key][incentive_name] = allIncentives[key][incentive_name].eligible
 

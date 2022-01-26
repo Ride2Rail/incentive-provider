@@ -5,10 +5,6 @@ logger = logging.getLogger('incentive_provider_api.rules')
 
 
 class Rule(ABC):
-    # QUESTION:
-    # Why do we add name and key as class attributes (these are not used by RideSharingInvolved class)
-    # would not be better to include it directly as constants only into the definition of methods that execute given rules?
-
     def __init__(self, communicator_dict, name, incentive):
         # communicator to get required data for rule evaluation
         self.communicator_dict  = communicator_dict

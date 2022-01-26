@@ -82,26 +82,49 @@ In addition, it takes care of logging the errors, which is the  functionality th
 
 
 ## Script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py)
+The script implements rules that pre-evaluate eligibility of offer items to be assigned an incentive. 
+
 ### Class Rule
+This class is a common predecessor of classes that implement rules. It is expected that every rule will be implemented 
+by a class inherited from the class _Rule_. The pre-evaluation is implemented by the method _checkFulfilled()_.
 
 ### Class TwoPassShared
+The class pre-evaluates the eligibility to receive the _FreeSeat_ incentive. 
 
 ### Class RideSharingInvolved
+The class pre-evaluates the eligibility to receive the _10%Discount_ incentive. 
 
 ### Class ThreePreviousEpisodesRS
+The class pre-evaluates the eligibility to receive the _20%Discount_ incentive. 
 
 ### Class Incentive
+The class maintains the results of a rule evaluation for later use, e.g., for the consistency check or for the final 
+output of results. An instance of the class _Incentive_ is created for every offer item and every type of incentive,
+
 
 ## Script [incentive_provider.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider.py)
+The script implements upper layer of the Incentive provider module.  It takes care of the initialization of rules that 
+are applied in the pre-evaluation process and initialization of the incentives. The script implements the way how the 
+rules are applied and the consistency check that ensures that only mutually compatible incentives are returned for each 
+offer item.
+
 ### Class IncentiveProvider
+The class _IncentiveProvider_ implements the method _getEligibleIncentives()_ that executes each rule on 
+each offer item, the method _consistencyCheck()_ that implements the constraints defining the mutual compatibility 
+of incentives. Currently, to demonstrate this functionality the incentives _10%Discount_ and _20%Discount_ are considered to 
+be mutually incompatible and if rules assigned both these incentives to a single offer item, during the consistency 
+check the eligibility for _10%Discount_ is cancelled.
+
 
 ### Class IncentiveProviderManager
-
+The class _IncentiveProviderManager_ ensures correct initialization of the incentive provider and implements the 
+method _getIncentives()_ that calls the methods implemented by the class _IncentiveProvider_ to execute the pre-evaluation 
+of incentive eligibility.
 
 # Usage
 
 ## Local development (debug on)
-The module "Incentive provider" can be launched from the terminal locally by running the script "incentive_provider_api.py":
+The module "Incentive provider" can be launched locally from the terminal by running the script "incentive_provider_api.py":
 ```bash
 2022-01-17 11:29:45 - incentive_provider_api - INFO - config loaded successfully
  * Serving Flask app 'incentive_provider_api' (lazy loading)
@@ -109,6 +132,12 @@ The module "Incentive provider" can be launched from the terminal locally by run
  * Debug mode: on
  * Running on http://127.0.0.1:5003/ (Press CTRL+C to quit)
 ```
+The incentive provider was configured to run by default on the port _5003_. 
+
+
+## Docker environment
+
+
 
 ## Requesting Data provider service
 Example of the curl command to receive a JSON file with information about the incentives associate with the travel offers included in the request which is identified by  < request_id >:

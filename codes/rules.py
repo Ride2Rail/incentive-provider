@@ -150,6 +150,7 @@ class ThreePreviousEpisodesRS(Rule):
                 "url": "disc20_url",
                 "id": user_OC_data["traveller_id"]
             })
+            # if there was no data obtained from AL set the result to false
             if req_res is None:
                 req_res = False
             ret_dict = {}
@@ -157,9 +158,11 @@ class ThreePreviousEpisodesRS(Rule):
                 incentive = self.incentive.getIncentive()
                 # if there is ridesharing and the rider had
                 incentive.eligible = req_res and offer_rs_dict[offer_id]
+                # add incentive to the returned dictionary
                 ret_dict[offer_id] = incentive
             return ret_dict
         else:
+            # if was no data extracted from offer cache, add it to the dictionary
             logger.error(f"Rule: ThreePreviousEpisodesRS: No data extracted from the Offer cache.")
             return {"no_offer": self.incentive}
 

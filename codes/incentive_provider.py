@@ -26,14 +26,14 @@ class IncentiveProvider:
     def incentiveIterWrapper(fun):
         @wraps(fun)
         def wrap(self, allIncentives):
-            try:
-                for key in allIncentives.keys():
-                    for incentive_name in allIncentives[key].keys():
-                        # check if there is a higher priority rule and if it is eligible, set the lesser rule eligibility
-                        # to false
+            for key in allIncentives.keys():
+                for incentive_name in allIncentives[key].keys():
+                    # check if there is a higher priority rule and if it is eligible, set the lesser rule eligibility
+                    # to false
+                    try:
                         fun(self, allIncentives, key, incentive_name)
-            except KeyError as ke:
-                logger.error(f"Key missing in Incentive provider: {ke}")
+                    except KeyError as ke:
+                        logger.error(f"Key missing in Incentive provider: {ke}")
             return allIncentives
         return wrap
 
@@ -74,8 +74,10 @@ class IncentiveProvider:
             # go through each rule and assign the incentive to the offer
             for rule in self.ruleList:
                 try:
+                    # extract incentive name
                     incentive_name = rule.offer_dict[offer_id].incentiveRankerID
-                    offer_dict[offer_id][incentive_name] = rule.offer_dict[offer_id] #.eligible
+                    # add the rule for the given offer_id under the incentive name to the dictionary
+                    offer_dict[offer_id][incentive_name] = rule.offer_dict[offer_id]
                 except KeyError as ke:
                     logging.error(f"Missing result for offer {offer_id} when processing rule {rule.name} "
                                   f"in the IncentiveProvider class")

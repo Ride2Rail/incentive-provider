@@ -35,7 +35,7 @@ def return_incentives():
     IPM     = codes.incentive_provider.IncentiveProviderManager(config)
 
     # execute incentive provider
-    output  =  IPM.getIncentives({"request_id":request_id})
+    output  =  IPM.getIncentives({"request_id": request_id})
 
     # print output on the screen (only for testing purposes)
     if output is not None:

@@ -43,24 +43,23 @@ Incentive provider module is implemented by classes that are presented in the fo
 The script implements communicators. A Communicator is a class ensuring interaction with an external service.
 
 ### Class Communicator
-The class _Communicator_ is an abstract class serving as a common predecessor for classed that implement communication 
+The class _Communicator_ is an abstract class serving as a common predecessor for classes that implement communication 
 with external services.
 
 ### Class AgreementLedgerCommunicator
 The class _AgreementLedgerCommunicator_ ensures sending of request to the Agreement Ledger. It implements 
 reading of urls and of other parameters from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
-Further, the creates an instance of the class _RequestObtainer_ that ensures exacution of requests. 
+Further, it creates an instance of the class _RequestObtainer_ that ensures execution of requests. 
 The request is executed by the method _accessRuleData()_.
 
 ### Class OfferCacheCommunicator
-The class _OfferCacheCommunicator_ ensures sending of request to get values of attributes to the [offer-cache](https://github.com/Ride2Rail/offer-cache).
-It implements  reading of the host address and port from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf)
-that are required to establish a connection with the offer-cache and the connection is 
-established. The request to obtain data from the offer-cache is executed by calling the sequence of 
+The class _OfferCacheCommunicator_ ensures sending of request to the [offer-cache](https://github.com/Ride2Rail/offer-cache).
+It reads the host address and port from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf)
+and utilizes them to establish a connection with the offer-cache. The request to obtain data from the offer-cache is executed by calling the sequence of 
 methods that are implemented by this class. By calling the method _accessRuleData()_, the request to get data from the offer-cache is 
 executed. Depended on the level of requested data, methods _read_data_from_offer_cache()_ and _redis_request_level_item()_
 are called. The method _read_data_from_offer_cache()_ ensures calling of the method _read_data_from_cache_wrapper()_ from the
-package _r2r_offer_utils_ that for a given _request_id_ reads the required attribute values at the levels of offer items and trip legs.
+package _r2r_offer_utils_ that for a given _request_id_ reads the required attribute values at the levels of offer item and trip leg.
 The method _redis_request_level_item()_ reads the required values of attributes at the level of the mobility request.
 
 ## Script [AL_requester.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/AL_requester.py)
@@ -73,7 +72,7 @@ The url and headers need to be provided as parameters.
 ### Class RequestObtainer
 The class executes requests to an external end-point. It reads the parameters of the authentication end-point from the 
 configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
-It created an instance of the class _AuthTokenObtainer_ that ensures acquisition of the communication token.
+It creates an instance of the class _AuthTokenObtainer_ that ensures acquisition of the communication token.
 The method _load_request()_ executes authentication and the request to the external service. 
 The handling and logging of error situations is separated in the method _checkResponse()_.
 
@@ -118,7 +117,7 @@ check the eligibility for _10%Discount_ is cancelled.
 
 
 ### Class IncentiveProviderManager
-The class _IncentiveProviderManager_ ensures correct initialization of the incentive provider and implements the 
+The class _IncentiveProviderManager_ ensures correct initialization of the Incentive provider and implements the 
 method _getIncentives()_ that calls the methods implemented by the class _IncentiveProvider_ to execute the pre-evaluation 
 of incentive eligibility.
 
@@ -131,19 +130,44 @@ The module "Incentive provider" can be launched locally from the terminal by run
  * Serving Flask app 'incentive_provider_api' (lazy loading)
  * Environment: development
  * Debug mode: on
- * Running on http://127.0.0.1:5003/ (Press CTRL+C to quit)
+ * Running on http://127.0.0.1:5011/ (Press CTRL+C to quit)
 ```
-The incentive provider was configured to run by default on the port _5003_. 
-
+The incentive provider was configured to run by default on the port _5011_. 
 
 ## Docker environment
+1. Go to the incentive-provider directory and build the docker image
+```bash
+$ docker-compose build 
+```
+
+2. Run the docker container 
+```bash
+docker-compose up 
+```
+
+```bash
+Starting incentive-provider ... done
+Attaching to incentive-provider
+incentive-provider    |  * Serving Flask app 'incentive_provider_api.py' (lazy loading)
+incentive-provider    |  * Environment: production
+incentive-provider    |    WARNING: This is a development server. Do not use it in a production deployment.
+incentive-provider    |    Use a production WSGI server instead.
+incentive-provider    |  * Debug mode: off
+incentive-provider    | 2022-01-27 07:10:51 - incentive_provider_api - INFO - config loaded successfully
+incentive-provider    |  * Running on all addresses.
+incentive-provider    |    WARNING: This is a development server. Do not use it in a production deployment.
+incentive-provider    |  * Running on http://172.18.0.4:5000/ (Press CTRL+C to quit)
+```
+
+Please note that incentive-provider container connects to the docker network trias-extractor_offer-enhancer-net. 
+to be able to communicate with other modules.  Hence, this network must be established prior to running the incentive-provider 
+container.  Such network is created when the trias-extractor is launched in the docker environment. 
 
 
-
-## Requesting Data provider service
+## Requesting Incentive provider service
 Example of the curl command to receive a JSON file with information about the incentives associate with the travel offers included in the request which is identified by  < request_id >:
 ```bash
-curl -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=< request_id >"
+curl -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=< request_id >"
 ```
 
 Example of the returned JSON file:

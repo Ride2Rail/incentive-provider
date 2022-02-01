@@ -224,8 +224,7 @@ the following JSON file:
         "trainSeatUpgrade": false,
         "20discount": false
     }
-},
-    "request_id": "b6b26660-1326-4b6b-bf00-132ec7e576de"
+}, 660-1326-4b6b-bf00-132ec7e576de"
 * Closing connection 1
 }(base) 
 ``` 

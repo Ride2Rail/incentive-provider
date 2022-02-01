@@ -227,7 +227,7 @@ the following JSON file:
 },
     "request_id": "b6b26660-1326-4b6b-bf00-132ec7e576de"
 * Closing connection 1
-}(base)
+}(base) 
 ``` 
 
 In a case, if the authentication or a request to the Agreement Ledger fails, the eligibility to receive the corresponding incentives is set to "false"

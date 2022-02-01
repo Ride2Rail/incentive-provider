@@ -227,7 +227,7 @@ the following JSON file:
 }, 660-1326-4b6b-bf00-132ec7e576de"
 * Closing connection 1
 }(base) 
-``` 
+```  
 
 In a case, if the authentication or a request to the Agreement Ledger fails, the eligibility to receive the corresponding incentives is set to "false"
 and the HTTP status code  200 is returned. The information about the experienced errors is reported to the standard output and logged to the file [error.log](https://github.com/Ride2Rail/incentive-provider/blob/main/error.log).

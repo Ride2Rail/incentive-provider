@@ -43,6 +43,10 @@ pip-delete-this-directory.txt
 # ignore directory with test data
 test/
 
+
+# ignore log file with error.log
+error.log
+
 # Unit test / coverage reports
 htmlcov/
 .tox/

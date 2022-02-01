@@ -15,9 +15,9 @@ config = ConfigLoader(LoggerFormatter(logger), service_name).config
 #
 # Testing examples
 #
-#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=97b558d0-4093-47ec-90ad-cf5903586a08"
-#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=939a09ff-4e8f-40d3-9a6f-4aac0d6622f9"
-#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=b6b26660-1326-4b6b-bf00-132ec7e576de"
+#curl -v -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=97b558d0-4093-47ec-90ad-cf5903586a08"
+#curl -v -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=939a09ff-4e8f-40d3-9a6f-4aac0d6622f9"
+#curl -v -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=b6b26660-1326-4b6b-bf00-132ec7e576de"
 ########################################################################################################################
 ########################################################################################################################
 ########################################################################################################################

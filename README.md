@@ -164,7 +164,7 @@ to be able to communicate with other modules.  Hence, this network must be estab
 container.  Such network is created when the trias-extractor is launched in the docker environment. 
 
 
-## Requesting Incentive provider service
+## Requesting Incentive provider
 Example of the curl command to receive a JSON file with information about the incentives associate with the travel offers included in the request which is identified by  < request_id >:
 ```bash
 curl -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=< request_id >"
@@ -204,8 +204,35 @@ Example of the returned JSON file:
 (base)
 ```
 
-
-
 ## Response
+The Incentive provider returns the JSON file as exemplified in the 
+Section Requesting Incentive provider. If the request is successfully processed,
+The JSON file contains for each offer, identified by the offer ID, a list of all incentives 
+and the value "true" or "false" indicating the result of the 
+incentive eligibility pre-evaluation.
+
+For the correct functionality of the Incentive provider the
+functional connection to the Offer-cache component is essential. So if there 
+is no information associated with the provided _request_id_ in the 
+Offer-cache or if the connection to the Offer cache is not functional 
+the Incentive Provider together with the HTTP code 200 returns 
+the following JSON file:
+```JSON
+"offers": {
+    "no_offer": {
+        "10discount": false,
+        "trainSeatUpgrade": false,
+        "20discount": false
+    }
+}, 660-1326-4b6b-bf00-132ec7e576de"
+* Closing connection 1
+}(base) 
+```  
+
+In a case, if the authentication or a request to the Agreement Ledger fails, the eligibility to receive the corresponding incentives is set to "false"
+and the HTTP status code  200 is returned. The information about the experienced errors is reported to the standard output and logged to the file [error.log](https://github.com/Ride2Rail/incentive-provider/blob/main/error.log).
 
 # Limitations
+* The communication with the Agreement Ledger could be run in parallel to improve the response. However, the preliminary 
+experiments showed favorable response times of the Agreement Ledger and thus there was no need to further optimise the code.
+

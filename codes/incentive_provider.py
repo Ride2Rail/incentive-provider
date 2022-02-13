@@ -1,3 +1,5 @@
+import collections
+
 import codes.rules
 import codes.communicators as communicators
 import logging
@@ -79,9 +81,26 @@ class IncentiveProvider:
                     # add the rule for the given offer_id under the incentive name to the dictionary
                     offer_dict[offer_id][incentive_name] = rule.offer_dict[offer_id]
                 except KeyError as ke:
-                    logging.error(f"Missing result for offer {offer_id} when processing rule {rule.name} "
+                    logger.error(f"Missing result for offer {offer_id} when processing rule {rule.name} "
                                   f"in the IncentiveProvider class")
         return offer_dict
+
+    def flatten_incentives(self, incentive_dict, occ: communicators.OfferCacheCommunicator, request_id):
+        parent_key = f"{request_id}:incentives"
+        flat_dict = IncentiveProvider.flatten(incentive_dict, parent_key)
+        return occ.write_dict_redis(flat_dict)
+
+    @staticmethod
+    def flatten(d: dict, parent_key='', sep=':'):
+        items = []
+        for k, v in d.items():
+            new_key = parent_key + sep + str(k) if parent_key else k
+            if isinstance(v, collections.abc.MutableMapping):
+                items.extend(IncentiveProvider.flatten(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+
 
 class IncentiveProviderManager:
     def __init__(self, config):
@@ -89,12 +108,12 @@ class IncentiveProviderManager:
         # create required communicators
         #
         # offer cache communicator
-        OCC = communicators.OfferCacheCommunicator(config)
-        ALC = communicators.AgreementLedgerCommunicator(config)
+        self.OCC = communicators.OfferCacheCommunicator(config)
+        self.ALC = communicators.AgreementLedgerCommunicator(config)
 
         communicator_dict = {
-            "AL_communicator": ALC,
-            "offer_cache_communicator": OCC
+            "AL_communicator": self.ALC,
+            "offer_cache_communicator": self.OCC
         }
 
         #
@@ -106,7 +125,7 @@ class IncentiveProviderManager:
         #
         # create incentive provider rules
         #
-        ruleRideSharingInvolved = codes.rules.RideSharingInvolved({"offer_cache_communicator": OCC}, incentive10discount)
+        ruleRideSharingInvolved = codes.rules.RideSharingInvolved({"offer_cache_communicator": self.OCC}, incentive10discount)
         ruleTwoPassShared = codes.rules.TwoPassShared(communicator_dict, incentiveTrainSeatUpgrade)
         ruleThreePreviousEpisodesRS = codes.rules.ThreePreviousEpisodesRS(communicator_dict, incentive20discount)
 
@@ -124,3 +143,6 @@ class IncentiveProviderManager:
         allIncentives = self.incentiveProvider.getEligibleIncentives(data_dict)
         allIncentives = self.incentiveProvider.consistencyCheck(allIncentives)
         return self.incentiveProvider.extractBooleanValues(allIncentives)
+
+    def incentivesToCache(self, data_dict, request_id):
+        return self.incentiveProvider.flatten_incentives(data_dict, self.OCC, request_id)

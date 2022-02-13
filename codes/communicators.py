@@ -30,7 +30,7 @@ class AgreementLedgerCommunicator(Communicator):
     def __init__(self, config, data=None):
         super().__init__(data)
         # config = data["config"]
-        # objects required for requests
+        # objects required for requests.txt
         if config is not None:
             self.url_dict = {
                 "disc20_url": config.get('agreement_ledger_api', 'disc20_url'),
@@ -166,8 +166,6 @@ class OfferCacheCommunicator(Communicator):
     def check_empty_dict(self, dict):
         """
         Check if the received OC dictionary has empty fields
-        :param dict:
-        :return:
         """
         try:
             return dict['output_offer_level']['offer_ids'] == [] or dict['output_offer_level']['offer_ids'] == {}
@@ -175,3 +173,17 @@ class OfferCacheCommunicator(Communicator):
             logger.error(f"Key was missing in received OC data: {ke}")
             return True
 
+    def write_dict_redis(self, data_dict):
+        pipe = self.cache.pipeline()
+        for key, value in data_dict.items():
+            if value is not None:
+                if type(value) is bool:
+                    value = int(value)
+                pipe.set(key, value)
+        try:
+            pipe_res_list = pipe.execute()
+        # Raised if incorrect key types were provided
+        except redis.exceptions.RedisError as re:
+            logger.error(f"Error when reading from cache, probably wrong data type: \n{re}")
+            return False
+        return True

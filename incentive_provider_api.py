@@ -15,91 +15,49 @@ config = ConfigLoader(LoggerFormatter(logger), service_name).config
 #
 # Testing examples
 #
-#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=97b558d0-4093-47ec-90ad-cf5903586a08"
-#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=939a09ff-4e8f-40d3-9a6f-4aac0d6622f9"
-#curl -v -X GET "http://127.0.0.1:5003/incentive_provider/?request_id=b6b26660-1326-4b6b-bf00-132ec7e576de"
-########################################################################################################################
-########################################################################################################################
-########################################################################################################################
+# curl -v -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=4ab9befc-5dd5-4751-96a2-d67ca18c5ad2"
+# curl -v -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=53592604-d41a-42e4-8859-99e6af7e4fbe"
+# curl -v -X GET "http://127.0.0.1:5011/?request_id=d6868083-354e-4b9c-87f2-15ea50934549"
+#########################################################################################################################
 # INCENTIVE PROVIDER INTERFACE
 ########################################################################################################################
-########################################################################################################################
-########################################################################################################################
-@app.route('/incentive_provider/', methods=['GET'])
+@app.route('/', methods=['GET'])
 def return_incentives():
     args = request.args.to_dict()
     request_id = args["request_id"]
     logger.info(f"GET request for incentives obtained with request_id = {request_id}")
 
     # create incentive provider
-    IPM     = codes.incentive_provider.IncentiveProviderManager(config)
+    IPM = codes.incentive_provider.IncentiveProviderManager(config)
 
     # execute incentive provider
-    output  =  IPM.getIncentives({"request_id": request_id})
+    try:
+        incenitve_dict = IPM.getIncentives({"request_id": request_id})
+    except Exception as ex:
+        incenitve_dict = None
+        logger.error(f"Unexpected exception at the top level of API received: {ex} ")
+
+    if incenitve_dict is None:
+        return "Error when processing incentives", 500
 
     # print output on the screen (only for testing purposes)
-    if output is not None:
-        for key in output:
-            for incentive in output[key]:
-                logger.info(f"KEY={key}, incetive={incentive}, eligible={output[key][incentive]}")
+    for key in incenitve_dict:
+        for incentive in incenitve_dict[key]:
+            logger.info(f"KEY={key}, incetive={incentive}, eligible={incenitve_dict[key][incentive]}")
+
+    # write incentives to cache
+    written = IPM.incentivesToCache(incenitve_dict, request_id)
+    # if they could have not been written to cache, return 500
+    if written:
+        logger.info("Incentive data successfully written to Cache")
+    else:
+        return "Error writing to cache", 500
+    # ?T0DO: add incentive ID to the response
     wrap_res = {
-        "offers": output,
+        "offers": incenitve_dict,
         "request_id": request_id
     }
-    return json.dumps(wrap_res, indent = 4), 200
-########################################################################################################################
-########################################################################################################################
-########################################################################################################################
-# TESTING INTERFACES
-########################################################################################################################
-########################################################################################################################
-########################################################################################################################
-
-# Requesting Agreement ledger
-
-#
-# Testing examples
-#
-# curl -v -X GET http://127.0.0.1:5003/ALget/22b2b69f-567c-4e62-b791-476bb0cf3825
-# curl -v -X GET http://127.0.0.1:5003/ALget/d6452caf-759d-44dc-8667-0954ed879071
-
-@app.route('/ALget/<request_id>', methods=['GET'])
-def return_ALdata(request_id):
-    """
-    passes requests incentives
-    :return: response json
-    """
-
-    logger.info(f"obtained request with id: {request_id}")
-
-    IPM = codes.incentive_provider.IncentiveProviderManager(config)
-    output = IPM.getIncentives({"request_id": request_id})
-
-    return {"request_id": request_id, "offer_incentives": output}, 200
-    #
-    # if type(response) is MyResponse:
-    #     logger.error("error in authentication token")
-    #     return response.get_response()
-    # if type(response) is dict:
-    #     logger.info("json returned succesfully")
-    #     return response
-    # return "{}",404
-
-
-# Requesting Offer-cache
-
-
-#
-# Testing examples
-#
-
-# curl -v -X GET http://127.0.0.1:5003/rt/d6452caf-759d-44dc-8667-0954ed879071
-
-@app.route('/rt/<request_id>', methods=['GET'])
-def redis_test(request_id):
-    OCC = communicators.OfferCacheCommunicator(config)
-    res = OCC.redis_request_level_item(request_id, ["traveller_id","offers", "user_id"], ["v","l","v"])
-    return res, 200
+    return json.dumps(wrap_res, indent=4), 200
 
 
 if __name__ == '__main__':

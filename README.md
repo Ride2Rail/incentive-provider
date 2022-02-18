@@ -129,6 +129,16 @@ The class _IncentiveProviderManager_ ensures correct initialization of the Incen
 # Usage
 
 ## Local development (debug on)
+Before launching the service on the localhost, make sure that in the configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/incentive_provider_api.conf),
+section _cache_, the _host_  is set to value _localhost_. Thi is required for establishing the connection to the [Offer-cache](https://github.com/Ride2Rail/offer-cache).
+
+```bash
+[cache]
+host = localhost
+port = 6379
+```
+
+
 The module "Incentive provider" can be launched locally from the terminal by running the script "incentive_provider_api.py":
 ```bash
 2022-01-17 11:29:45 - incentive_provider_api - INFO - config loaded successfully
@@ -140,6 +150,16 @@ The module "Incentive provider" can be launched locally from the terminal by run
 The incentive provider was configured to run by default on the port _5011_. 
 
 ## Docker environment
+Before launching the service on the Docker, make sure that in the configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/incentive_provider_api.conf),
+section _cache_, the _host_  is set to value _cache_. This is required for establishing the connection to the [Offer-cache](https://github.com/Ride2Rail/offer-cache).
+
+```bash
+[cache]
+host = cache
+port = 6379
+```
+
+
 1. Go to the incentive-provider directory and build the docker image
 ```bash
 $ docker-compose build 

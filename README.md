@@ -37,7 +37,7 @@ the method checkFulfilled()_ of the class _TwoPassShared_ implemented in the scr
 This step requires registration of the service at the Agreement Ledger Login end-point. 
 Afterwards, the Incentive provider module is assigned a _secret_. 
 Valid values need to be defined in the configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/incentive_provider_api.conf).
-The url can be set in the section _agreement_ledger_api_:
+The URL can be set in the section _agreement_ledger_api_:
 
 ```bash
 [agreement_ledger_api]
@@ -61,42 +61,36 @@ The class _Communicator_ is an abstract class serving as a common predecessor fo
 with external services.
 
 ### Class AgreementLedgerCommunicator
-The class _AgreementLedgerCommunicator_ ensures sending of request to the Agreement Ledger. It implements 
-reading of urls and of other parameters from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
-Further, it creates an instance of the class _RequestObtainer_ that ensures execution of requests. 
-The request is executed by the method _accessRuleData()_.
+The class _AgreementLedgerCommunicator_ ensures sending a request to the Agreement Ledger. It implements 
+reading of URLs and of other parameters from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
+Further, it creates an instance of the class _RequestObtainer_ that ensures the execution of requests. The request is executed by the method _accessRuleData()_.
 
 ### Class OfferCacheCommunicator
-The class _OfferCacheCommunicator_ ensures sending of request to the [offer-cache](https://github.com/Ride2Rail/offer-cache).
+The class _OfferCacheCommunicator_ ensures sending a request to the [offer-cache](https://github.com/Ride2Rail/offer-cache).
 It reads the host address and port from the config file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf)
-and utilizes them to establish a connection with the offer-cache. The request to obtain data from the offer-cache is executed by calling the sequence of 
-methods that are implemented by this class. By calling the method _accessRuleData()_, the request to get data from the offer-cache is 
-executed. Depended on the level of requested data, methods _read_data_from_offer_cache()_ and _redis_request_level_item()_
+and utilizes them to establish a connection with the offer-cache. The request to obtain data from the Offer-Cache is executed by calling the sequence of methods that are implemented by this class. By calling the method _accessRuleData()_, the request to get data from the offer-cache is executed. Depended on the level of requested data, methods _read_data_from_offer_cache()_ and _redis_request_level_item()_
 are called. The method _read_data_from_offer_cache()_ ensures calling of the method _read_data_from_cache_wrapper()_ from the
 package _r2r_offer_utils_ that for a given _request_id_ reads the required attribute values at the levels of offer item and trip leg.
 The method _redis_request_level_item()_ reads the required values of attributes at the level of the mobility request.
 
 ## Script [AL_requester.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/AL_requester.py)
-The script implements classes ensuring interaction (authetication and sending of request) with external services (i.e., Agreement Ledger).
+The script implements classes ensuring interaction (authentication and sending of request) with external services (i.e., Agreement Ledger).
 
 ### Class AuthTokenObtainer
-The class implements acquisition and renewal of the communication token from a login in end-point.
-The url and headers need to be provided as parameters.
+The class implements acquisition and renewal of the communication token from the login in end-point. The URL and headers need to be provided as parameters.
 
 ### Class RequestObtainer
 The class executes requests to an external end-point. It reads the parameters of the authentication end-point from the 
 configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
-It creates an instance of the class _AuthTokenObtainer_ that ensures acquisition of the communication token.
+It creates an instance of the class _AuthTokenObtainer_ that ensures the acquisition of the communication token.
 The method _load_request()_ executes authentication and the request to the external service. 
 The handling and logging of error situations is separated in the method _checkResponse()_.
 
 ### Class MyResponse
-The class is used to wrap up the response of methods that ensure communication with external services. 
-In addition, it takes care of logging the errors, which is the  functionality that is also sometimes used and an instance of the class is created for this purpose.
-
+The class is used to wrap up the response of methods that ensure communication with external services. In addition, it takes care of logging the errors, which is the functionality that is also sometimes used, and an instance of the class is created for this purpose.
 
 ## Script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py)
-The script implements rules that pre-evaluate eligibility of offer items to be assigned an incentive. 
+The script implements rules that pre-evaluate the eligibility of offer items to be assigned an incentive. 
 
 ### Class Rule
 This class is a common predecessor of classes that implement rules. It is expected that every rule will be implemented 
@@ -113,27 +107,24 @@ The class pre-evaluates the eligibility to receive the _20%Discount_ incentive.
 
 ### Class Incentive
 The class maintains the results of a rule evaluation for later use, e.g., for the consistency check or for the final 
-output of results. An instance of the class _Incentive_ is created for every offer item and every type of incentive,
-
+output of results. An instance of the class _Incentive_ is created for every offered item and every type of incentive.
 
 ## Script [incentive_provider.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider.py)
-The script implements upper layer of the Incentive provider module.  It takes care of the initialization of rules that 
-are applied in the pre-evaluation process and initialization of the incentives. The script implements the way how the 
+The script implements the upper layer of the Incentive provider module. It takes care of the initialization of rules that 
+are applied in the pre-evaluation process and the initialization of the incentives. The script implements the way how the 
 rules are applied and the consistency check that ensures that only mutually compatible incentives are returned for each 
-offer item.
+offered item.
 
 ### Class IncentiveProvider
 The class _IncentiveProvider_ implements the method _getEligibleIncentives()_ that executes each rule on 
 each offer item, the method _consistencyCheck()_ that implements the constraints defining the mutual compatibility 
-of incentives. Currently, to demonstrate this functionality the incentives _10%Discount_ and _20%Discount_ are considered to 
+of incentives. Currently, to demonstrate this functionality, the incentives _10%Discount_ and _20%Discount_ are considered to 
 be mutually incompatible and if rules assigned both these incentives to a single offer item, during the consistency 
 check the eligibility for _10%Discount_ is cancelled.
 
 
 ### Class IncentiveProviderManager
-The class _IncentiveProviderManager_ ensures correct initialization of the Incentive provider and implements the 
-method _getIncentives()_ that calls the methods implemented by the class _IncentiveProvider_ to execute the pre-evaluation 
-of incentive eligibility.
+The class _IncentiveProviderManager_ ensures correct initialization of the Incentive provider and implements the method _getIncentives()_ that calls the methods implemented by the class _IncentiveProvider_ to execute the pre-evaluation of incentive eligibility.
 
 # Usage
 
@@ -173,20 +164,17 @@ incentive-provider    |    WARNING: This is a development server. Do not use it 
 incentive-provider    |  * Running on http://172.18.0.4:5000/ (Press CTRL+C to quit)
 ```
 
-Please note that incentive-provider container connects to the docker network trias-extractor_offer-enhancer-net. 
+Please note that the Incentive provider container connects to the docker network trias-extractor_offer-enhancer-net. 
 to be able to communicate with other modules.  Hence, this network must be established prior to running the incentive-provider 
-container.  Such network is created when the trias-extractor is launched in the docker environment. 
-
+container.  Such a network is created when the trias-extractor is launched in the docker environment. 
 
 ## Requesting Incentive provider
-Example of the curl command to receive a JSON file with information about the incentives associate with the travel offers included in the request which is identified by  < request_id >:
+Example of the curl command to receive a JSON file with information about the incentives associated with the travel offers included in the request, which is identified by  < request_id >:
 ```bash
 curl -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=< request_id >"
 ```
 
 Example of the returned JSON file:
-
-
 ```JSON
 {
     "36e5c5b9-b434-40c4-8017-9ec79578813a": {
@@ -219,17 +207,12 @@ Example of the returned JSON file:
 ```
 
 ## Response
-The Incentive provider returns the JSON file as exemplified in the 
-Section Requesting Incentive provider. If the request is successfully processed,
-The JSON file contains for each offer, identified by the offer ID, a list of all incentives 
-and the value "true" or "false" indicating the result of the 
-incentive eligibility pre-evaluation.
+The Incentive provider returns the JSON file as exemplified in the Section Requesting Incentive provider. If the request is successfully processed, The JSON file contains for each offer, identified by the offer ID, a list of all incentives and the value "true" or "false" indicating the result of the incentive eligibility pre-evaluation.
 
 For the correct functionality of the Incentive provider the
-functional connection to the Offer-cache component is essential. So if there 
-is no information associated with the provided _request_id_ in the 
+functional connection to the Offer-cache component is essential. So if there is no information associated with the provided _request_id_ in the 
 Offer-cache or if the connection to the Offer cache is not functional 
-the Incentive Provider together with the HTTP code 200 returns 
+the Incentive Provider, together with the HTTP code 200, returns 
 the following JSON file:
 ```JSON
 "offers": {
@@ -248,5 +231,5 @@ and the HTTP status code  200 is returned. The information about the experienced
 
 # Limitations
 * The communication with the Agreement Ledger could be run in parallel to improve the response. However, the preliminary 
-experiments showed favorable response times of the Agreement Ledger and thus there was no need to further optimise the code.
+experiments showed favourable response times of the Agreement Ledger, and thus there was no need to further optimise the code.
 

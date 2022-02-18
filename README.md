@@ -1,20 +1,19 @@
 # Incentive provider
 
-This R2R module pre-evaluates the eligibility to receive travel incentives. The incentives 
-are associated with travel offers. Current version supports the incentives listed in the following Table:
+This R2R module pre-evaluates the eligibility to receive travel incentives. The incentives are associated with travel offers. The current version supports the incentives listed in the following table:
 
 | Incentive | Description |
 |:---------:|-------------|
-|     10%Discount     | The incentive is associated with a travel offer item, if at least one ride-sharing leg is included in any travel offer item.       |
-|     20%Discount     | The incentive is associated with a travel offer item, if the offer item contains at least one ride-sharing leg and the passenger completed at least three ride-shares. The counter of completed ride-shares is set to zero after allocating the incentive.  |
-|      FreeSeat       | The incentive is associated with a travel offer item, if at least one other passenger booked at least one of the ride-shares included in the travel offer item. |
+|     10%Discount     | The incentive is associated with a travel offer item if at least one ride-sharing leg is included in any travel offer item.       |
+|     20%Discount     | The incentive is associated with a travel offer item if the offered item contains at least one ride-sharing leg and the passenger completed at least three ride-shares. The counter of completed ride-shares is set to zero after allocating the incentive. |
+|      FreeSeat       | The incentive is associated with a travel offer if at least one other passenger booked at least one of the ride-shares included in the travel offer item. |
 
 ## Calculation of incentives
 
 ### Incentive 10%Discount
 For a given _request_id_, the corresponding list of travel offer items and the transport modes associated with 
 legs are obtained from the [offer-cache](https://github.com/Ride2Rail/offer-cache).
-Based on this data, the presence of ride-sharing legs is analysed, in the method _checkFulfilled()_ of the class _RideSharingInvolved_ 
+Based on this data, the presence of ride-sharing legs is analysed in the method _checkFulfilled()_ of the class _RideSharingInvolved_ 
 implemented in the script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py).
 
 ### Incentive 20%Discount
@@ -34,7 +33,22 @@ offer item is concluded to be not eligible for this incentive. The evaluation is
 the method checkFulfilled()_ of the class _TwoPassShared_ implemented in the script [rules.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/rules.py).
 
 
+# Authentication with Agreement Ledger end-point
+This step requires registration of the service at the Agreement Ledger Login end-point. 
+Afterwards, the Incentive provider module is assigned a _secret_. 
+Valid values need to be defined in the configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/incentive_provider_api.conf).
+The url can be set in the section _agreement_ledger_api_:
 
+```bash
+[agreement_ledger_api]
+auth_url = URL_OF_AUTHENTICATION_AGREEMENT_LEDGER_END_POINT
+```
+
+The _secret_ can be set in the section _auth_:
+```bash
+[auth]
+basic_secret = SECRET
+```
 # Implementation
 Incentive provider module is implemented by classes that are presented in the following figure.
 ![Class diagram.](figures/class_diagram.png "Class diagram.").

@@ -40,9 +40,10 @@ class AgreementLedgerCommunicator(Communicator):
                 'auth_url': config.get('agreement_ledger_api', 'auth_url'),
                 'auth_secret': config.get('auth', 'basic_secret')
             }
-            self.requestObtainer = RequestObtainer("AgreementLedgerObtainer", auth_config)
+            self.requestObtainer = RequestObtainer(self.data['auth_token_obt'],
+                                                   "AgreementLedgerObtainer", auth_config)
         else:
-            logger.error('Could not read config file in communicators.py')
+            logger.error('Could not access config file in AgreementLedgerCommunicator')
 
     def accessRuleData(self, dict_data):
         # obtain the data from Agreement ledger using request obtainer
@@ -78,7 +79,7 @@ class OfferCacheCommunicator(Communicator):
             except redis.exceptions.ConnectionError as exc:
                 logger.error("Connection to the offer cache has not been established.")
         else:
-            logger.error('Could not read config file in communicators.py')
+            logger.error('Could not access config file in AgreementLedgerCommunicator')
 
 
     def read_data_from_offer_cache(self, request_id, list_offer_level_keys, list_tripleg_level_keys):

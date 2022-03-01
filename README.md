@@ -77,12 +77,14 @@ The method _redis_request_level_item()_ reads the required values of attributes 
 The script implements classes ensuring interaction (authentication and sending of request) with external services (i.e., Agreement Ledger).
 
 ### Class AuthTokenObtainer
-The class implements acquisition and renewal of the communication token from the login in end-point. The URL and headers need to be provided as parameters.
+The class implements acquisition and renewal of the communication token from the login in end-point. 
+The URL and headers need to be provided as parameters.
 
 ### Class RequestObtainer
 The class executes requests to an external end-point. It reads the parameters of the authentication end-point from the 
 configuration file [incentive_provider_api.conf](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/incentive_provider_api.conf).
-It creates an instance of the class _AuthTokenObtainer_ that ensures the acquisition of the communication token.
+It expects an instance of the class _AuthTokenObtainer_ that ensures the acquisition of the communication token. 
+The instances of _RequestObtainer_ should share a single instance of _AuthTokenObtainer_ to allow token sharing.
 The method _load_request()_ executes authentication and the request to the external service. 
 The handling and logging of error situations is separated in the method _checkResponse()_.
 

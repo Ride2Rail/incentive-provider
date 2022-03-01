@@ -103,13 +103,17 @@ class IncentiveProvider:
 
 
 class IncentiveProviderManager:
-    def __init__(self, config):
+    def __init__(self, config, auth_token_obt):
         #
         # create required communicators
         #
+
+        # data passed to AgreementLedgerCommunicator
+        data_ACL = {'auth_token_obt': auth_token_obt}
+
         # offer cache communicator
         self.OCC = communicators.OfferCacheCommunicator(config)
-        self.ALC = communicators.AgreementLedgerCommunicator(config)
+        self.ALC = communicators.AgreementLedgerCommunicator(config, data_ACL)
 
         communicator_dict = {
             "AL_communicator": self.ALC,

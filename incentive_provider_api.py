@@ -12,11 +12,13 @@ app             = Flask(service_name)
 logger = logging.getLogger(service_name)
 config = ConfigLoader(LoggerFormatter(logger), service_name).config
 
+auth_token_obt = AuthTokenObtainer()
+
 #
 # Testing examples
 #
-# curl -v -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=4ab9befc-5dd5-4751-96a2-d67ca18c5ad2"
-# curl -v -X GET "http://127.0.0.1:5011/incentive_provider/?request_id=53592604-d41a-42e4-8859-99e6af7e4fbe"
+# curl -v -X GET "http://127.0.0.1:5011/?request_id=4ab9befc-5dd5-4751-96a2-d67ca18c5ad2"
+# curl -v -X GET "http://127.0.0.1:5011/?request_id=53592604-d41a-42e4-8859-99e6af7e4fbe"
 # curl -v -X GET "http://127.0.0.1:5011/?request_id=d6868083-354e-4b9c-87f2-15ea50934549"
 #########################################################################################################################
 # INCENTIVE PROVIDER INTERFACE
@@ -28,7 +30,7 @@ def return_incentives():
     logger.info(f"GET request for incentives obtained with request_id = {request_id}")
 
     # create incentive provider
-    IPM = codes.incentive_provider.IncentiveProviderManager(config)
+    IPM = codes.incentive_provider.IncentiveProviderManager(config, auth_token_obt)
 
     # execute incentive provider
     try:

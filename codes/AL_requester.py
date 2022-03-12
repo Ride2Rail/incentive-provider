@@ -20,7 +20,6 @@ class AuthTokenObtainer:
         self.expires = None
         self.lock = threading.Semaphore()
         self.lock_timeout = lock_timeout
-        self.lock_counter = 0
 
     # Obtains the authentication key. If a key is requested and actual one has expired, obtains a new key.
     def obtain_token_old(self, headers, url):

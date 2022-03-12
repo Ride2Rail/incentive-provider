@@ -42,7 +42,7 @@ class IncentiveProvider:
     @incentiveIterWrapper #decorator ensures calling of the function on every offer item and incentive and logging of errors
     def consistencyCheck(self, allIncentives, key, incentive_name):
         """
-        cancel the incentive if there was assigned subordinate incentive that is not compatible with this one
+        set the incentive as uneligible if there was assigned subordinate incentive that is not compatible with this one
         """
         if allIncentives[key][incentive_name].incentiveAbove is not None and \
                 allIncentives[key][allIncentives[key][incentive_name].incentiveAbove].eligible:

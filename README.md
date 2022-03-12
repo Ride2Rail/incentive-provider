@@ -51,7 +51,7 @@ basic_secret = SECRET
 ```
 # Implementation
 Incentive provider module is implemented by classes that are presented in the following figure.
-![Class diagram.](figures/class_diagram.png "Class diagram.").
+![Class diagram.](C:\Users\milan\PycharmProjects\incentive-provider\figures\class_diagram.png "Class diagram.").
 
 ## Script [communicators.py](https://github.com/Ride2Rail/incentive-provider/blob/main/codes/communicators.py)
 The script implements communicators. A Communicator is a class ensuring interaction with an external service.
@@ -78,7 +78,8 @@ The script implements classes ensuring interaction (authentication and sending o
 
 ### Class AuthTokenObtainer
 The class implements acquisition and renewal of the communication token from the login in end-point. 
-The URL and headers need to be provided as parameters.
+The URL and headers need to be provided as parameters. If more requests simultaneously ask for an authentication token from AL api,
+only the first is allowed and the others wait. This parallelism is implemented by the binary Semaphore mechanism.
 
 ### Class RequestObtainer
 The class executes requests to an external end-point. It reads the parameters of the authentication end-point from the 
@@ -250,6 +251,12 @@ the following JSON file:
 
 In a case, if the authentication or a request to the Agreement Ledger fails, the eligibility to receive the corresponding incentives is set to "false"
 and the HTTP status code  200 is returned. The information about the experienced errors is reported to the standard output and logged to the file _error.log_.
+
+### Error responses
+In several cases HTTP code 500 with response can be returned:
+- if there is no request_id provided in URL parameters
+- if an unexpected exception emerged when processing incentives
+- if the writing of the results to cache failed
 
 # Limitations
 * The communication with the Agreement Ledger could be run in parallel to improve the response. However, the preliminary 

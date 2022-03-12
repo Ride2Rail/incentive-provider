@@ -1,6 +1,10 @@
 import json
 import requests
 
+"""
+The dictionary to add a leg
+"""
+
 url = "https://ledger.r2r.inlecom.eu/api/v1/token"
 headers = {'Authorization': 'Basic aW5jZW50aXZlOk16OWVuUmph',
            'accept': 'application/json'}
@@ -9,92 +13,160 @@ token_req = requests.post(url, headers=headers)
 print('Token request code: ' + token_req.status_code.__str__())
 auth_token = token_req.json()['access_token']
 
-
-def add_rs_example(auth_token, lyftId, driverId, travelEpisodeId, travellerId, bookingId, eventId1, eventId2):
-    res_code_list = []
-    req_dict = {
-        "lyftId": lyftId,
-        "driverId": driverId,
-        "travelExpertId": "ride2rail, ip4",
-        "price": 1.208282,
-        "travelEpisodeId": travelEpisodeId,
-        "travellerId": travellerId,
-        "currency": "ISO4217",
-        "id": bookingId,
-        "inventory": [
-            {
-                "quantity": 2,
-                "consumable": "seats"
-            },
-            {
-                "quantity": 2,
-                "consumable": "seats"
-            }
-        ],
-        "status": "placed"
-    }
-
-    url_post = "https://ledger.r2r.inlecom.eu/api/v1/booking"
+def send_request_AL(data_dict, url_suffix):
+    url_post = f"https://ledger.r2r.inlecom.eu/api/v1/{url_suffix}"
     get_headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
-    post_result = requests.post(url_post, data=json.dumps(req_dict), headers=get_headers)
-    res_code_list.append(post_result.status_code)
+    post_result = requests.post(url_post, data=json.dumps(data_dict), headers=get_headers)
+    return post_result
 
-    event_dict1 = {
-        "id": eventId1,
-        "driverId": driverId,
+
+booking_post_dict = {
+    "lyftId": "",
+    "driverId": "",
+    "travelExpertId": "ride2rail, ip4",
+    "price": 1.208282,
+    "travelEpisodeId": "",
+    "travellerId": "",
+    "currency": "ISO4217",
+    "id": "",
+    "inventory": [
+        {
+            "quantity": 2,
+            "consumable": "seats"
+        },
+        {
+            "quantity": 2,
+            "consumable": "seats"
+        }
+    ],
+    "status": "placed"
+}
+
+# add two bookings with RS of the users user0 and user2 - subset_5
+# traveller_id: bb36cb92-0e8c-489e-bb20-ea93b50e5490, bookingId: book-1-user0, travelEpisodeId: bd29a292-26c0-4768-9c94-rs1,  start, end events
+# traveller_id: 58ac96c2-df24-4429-872d-b8b1a0328235, bookingId: book-1-user2, travelEpisodeId: bd29a292-26c0-4768-9c94-rs1 start, end events
+
+user_0_1_dic = booking_post_dict.copy()
+
+user_0_1_dic['id'] = 'book-1-user0'
+user_0_1_dic['travellerId'] = 'bb36cb92-0e8c-489e-bb20-ea93b50e5490'
+user_0_1_dic['travelEpisodeId'] = 'bd29a292-26c0-4768-9c94-rs1'
+user_0_1_dic['lyftId'] = 'lyft-1-user0'
+user_0_1_dic['driverId'] = 'driver-1-user0'
+
+post_res = send_request_AL(user_0_1_dic, "booking")
+print(post_res.status_code)
+
+event_start_dict = {
+        "id": f'ev-{user_0_1_dic["id"]}-start',
+        "driverId": user_0_1_dic["driverId"],
         "type": "start",
-        "bookingId": bookingId,
-        "travellerId": travellerId,
+        "bookingId": user_0_1_dic["id"],
+        "travellerId": user_0_1_dic["travellerId"],
     }
 
-    event_dict2 = {
-        "id": eventId2,
-        "driverId": driverId,
-        "subtype": "driver cancels, passenger doesn't show up",
-        "description": "He just didnt show up",
-        "travellerId": travellerId,
-        "type": "end",
-        "bookingId": bookingId
+event_end_dict = event_start_dict.copy()
+event_end_dict.update({'id': f'ev-{event_start_dict["id"]}-end',
+                       'subtype': "driver cancels, passenger doesn't show up",
+                       'description': "He just didn't show up",
+                       "type": "end"})
+
+post_res = send_request_AL(event_start_dict, "event/")
+print(post_res.status_code)
+post_res2 = send_request_AL(event_end_dict, "event/")
+print(post_res2.status_code)
+
+
+
+user_2_1_dic = booking_post_dict.copy()
+
+user_2_1_dic['id'] = 'book-1-user2'
+user_2_1_dic['travellerId'] = '58ac96c2-df24-4429-872d-b8b1a0328235'
+user_2_1_dic['travelEpisodeId'] = 'bd29a292-26c0-4768-9c94-rs1'
+user_2_1_dic['lyftId'] = 'lyft-1-user2'
+user_2_1_dic['driverId'] = 'driver-1-user2'
+
+post_res = send_request_AL(user_2_1_dic, "booking")
+print(post_res.status_code)
+
+event_start_dict = {
+        "id": f'ev-{user_2_1_dic["id"]}-start',
+        "driverId": user_2_1_dic["driverId"],
+        "type": "start",
+        "bookingId": user_2_1_dic["id"],
+        "travellerId": user_2_1_dic["travellerId"],
     }
 
-    for event in [event_dict1, event_dict2]:
-        url_post = "https://ledger.r2r.inlecom.eu/api/v1/event/"
-        post_result = requests.post(url_post, data=json.dumps(event), headers=get_headers)
-        res_code_list.append(post_result.status_code)
-    return res_code_list
+event_end_dict = event_start_dict.copy()
+event_end_dict.update({'id': f'ev-{event_start_dict["id"]}-end',
+                       'subtype': "driver cancels, passenger doesn't show up",
+                       'description': "He just didn't show up",
+                       "type": "end"})
 
-add_rs_example(auth_token=auth_token, lyftId="lift-10", driverId="driver-2",
-               travelEpisodeId="ef9012a8-918b-4e20-a724-rs10", travellerId="b343adc2-a2fd-4f52-9969-2cf220b46daf",
-               bookingId="book-id-10", eventId1="event-15", eventId2="event-16")
-
-add_rs_example(auth_token=auth_token, lyftId="lift-11", driverId="driver-3", travelEpisodeId="ef9012a8-918b-4e20-a724-rs11", travellerId="b343adc2-a2fd-4f52-9969-2cf220b46daf",
-               bookingId="book-id-11", eventId1="event-17", eventId2="event-18")
-
-add_rs_example(auth_token, "lift-12", "driver-4", "ef9012a8-918b-4e20-a724-rs12", "b343adc2-a2fd-4f52-9969-2cf220b46daf",
-               "book-id-12", "event-19", eventId2="event-20")
-
-result5 = add_rs_example(auth_token, "lift-13", "driver-5", "ef9012a8-918b-4e20-a724-rs13", "b343adc2-a2fd-4f52-9969-2cf220b46dad",
-               "book-id-13", "event-21", eventId2="event-22")
-
-result6 = add_rs_example(auth_token, "lift-14", "driver-6", "ef9012a8-918b-4e20-a724-rs14", "b343adc2-a2fd-4f52-9969-2cf220b46dad",
-               "book-id-14", "event-23", "event-24")
-
-result7 = add_rs_example(auth_token, "lift-14", "driver-6", "ef9012a8-918b-4e20-a724-rs15", "b343adc2-a2fd-4f52-9969-2cf220b46dag",
-               "book-id-15", "event-25", "event-26")
-
-result8 = add_rs_example(auth_token, "lift-15", "driver-7", "episode-1", "traveller-1",
-               "book-id-16", "event-27", "event-28")
-
-result9 = add_rs_example(auth_token, "lift-15", "driver-7", "episode-2", "traveller-2",
-               "book-id-17", "event-31", "event-32")
+post_res = send_request_AL(event_start_dict, "event/")
+print(post_res.status_code)
+post_res2 = send_request_AL(event_end_dict, "event/")
+print(post_res2.status_code)
 
 
-url_get = "https://ledger.r2r.inlecom.eu/api/v1/incentive/20discount/b343adc2-a2fd-4f52-9969-2cf220b46dad"
-get_headers = {'accept': 'application/json', 'Authorization': 'Bearer ' + auth_token}
-get_result = requests.get(url_get, headers=get_headers)
-print(get_result.json())
+# subset_4_no_5_tsp_075_rs2.xml
+# traveller_id: bb36cb92-0e8c-489e-bb20-ea93b50e5490, booking_id: book-2-user0, travelEpisodeId: bd29a292-26c0-4768-9c94-rs2, no events
+# traveller_id: 58ac96c2-df24-4429-872d-b8b1a0328235, booking_id: book-2-user2, travelEpisodeId: bd29a292-26c0-4768-9c94-rs2, no events
 
-url_get = "https://ledger.r2r.inlecom.eu/api/v1/incentive/upgradeSeat/ef9012a8-918b-4e20-a724-rs15"
-get_headers = {'accept': 'application/json', 'Authorization': 'Bearer ' + auth_token}
-get_result = requests.get(url_get, headers=get_headers)
-print(get_result.json())
+
+user_0_2_dic = booking_post_dict.copy()
+
+user_0_2_dic['id'] = 'book-2-user0'
+user_0_2_dic['travellerId'] = 'bb36cb92-0e8c-489e-bb20-ea93b50e5490'
+user_0_2_dic['travelEpisodeId'] = 'bd29a292-26c0-4768-9c94-rs2'
+user_0_2_dic['lyftId'] = 'lyft-2-user0'
+user_0_2_dic['driverId'] = 'driver-2-user0'
+
+
+user_2_2_dic = booking_post_dict.copy()
+
+user_2_2_dic['id'] = 'book-2-user2'
+user_2_2_dic['travellerId'] = '58ac96c2-df24-4429-872d-b8b1a0328235'
+user_2_2_dic['travelEpisodeId'] = 'bd29a292-26c0-4768-9c94-rs2'
+user_2_2_dic['lyftId'] = 'lyft-2-user2'
+user_2_2_dic['driverId'] = 'driver-2-user2'
+
+post_res = send_request_AL(user_0_2_dic, "booking")
+print(post_res.status_code)
+
+post_res2 = send_request_AL(user_2_2_dic, "booking")
+print(post_res2.status_code)
+
+# add a single booking for user1 - subset_4_no_9_tsp_075.xml
+# this should have no eligibility
+# traveller_id: 9d2191ed-ba28-45d0-a0a8-f5dc4ad9e0f5, booking_id: book-2-user1, travelEpisode: 9465a4c7-8867-4ce2-834e-rs9, start and end events
+
+user_1_1_dic = booking_post_dict.copy()
+
+user_1_1_dic['id'] = 'book-2-user1'
+user_1_1_dic['travellerId'] = '9d2191ed-ba28-45d0-a0a8-f5dc4ad9e0f5'
+user_1_1_dic['travelEpisodeId'] = '9465a4c7-8867-4ce2-834e-rs91'
+user_1_1_dic['lyftId'] = 'lyft-2-user1'
+user_1_1_dic['driverId'] = 'driver-2-user1'
+
+post_res = send_request_AL(user_1_1_dic, "booking")
+print(post_res.status_code)
+
+event_start_dict = {
+        "id": f'ev-{user_1_1_dic["id"]}-start',
+        "driverId": user_1_1_dic["driverId"],
+        "type": "start",
+        "bookingId": user_1_1_dic["id"],
+        "travellerId": user_1_1_dic["travellerId"],
+    }
+
+event_end_dict = event_start_dict.copy()
+event_end_dict.update({'id': f'ev-{event_start_dict["id"]}-end',
+                       'subtype': "driver cancels, passenger doesn't show up",
+                       'description': "He just didn't show up",
+                       "type": "end"})
+
+post_res = send_request_AL(event_start_dict, "event/")
+print(post_res.status_code)
+post_res2 = send_request_AL(event_end_dict, "event/")
+print(post_res2.status_code)

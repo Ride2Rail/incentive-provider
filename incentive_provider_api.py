@@ -26,6 +26,8 @@ auth_token_obt = AuthTokenObtainer()
 @app.route('/', methods=['GET'])
 def return_incentives():
     args = request.args.to_dict()
+    if not args:
+        return "Missing request ID", 500
     request_id = args["request_id"]
     logger.info(f"GET request for incentives obtained with request_id = {request_id}")
 

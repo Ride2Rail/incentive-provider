@@ -230,13 +230,14 @@ Example of the returned JSON file:
 ```
 
 ## Response
-The Incentive provider returns the JSON file as exemplified in the Section Requesting Incentive provider. If the request is successfully processed, The JSON file contains for each offer, identified by the offer ID, a list of all incentives and the value "true" or "false" indicating the result of the incentive eligibility pre-evaluation.
+The Incentive provider returns the JSON file as exemplified in the Section Requesting Incentive provider. 
 
-For the correct functionality of the Incentive provider the
-functional connection to the Offer-cache component is essential. So if there is no information associated with the provided _request_id_ in the 
-Offer-cache or if the connection to the Offer cache is not functional 
-the Incentive Provider, together with the HTTP code 200, returns 
-the following JSON file:
+If the request is successfully processed, the JSON file contains for each travel offer a list of all incentives and 
+the value "true" or "false" indicating the result of the  incentive eligibility pre-evaluation.
+
+For the correct functionality of the Incentive provider the functional connection to the Offer-cache component is essential.
+So if there is no information associated with the provided _request_id_ in the  Offer-cache or if the connection 
+to the Offer cache is not functional the Incentive Provider returns the following JSON file together with the HTTP code 200:
 ```JSON
 "offers": {
     "no_offer": {
@@ -249,16 +250,17 @@ the following JSON file:
 }(base) 
 ```  
 
-In a case, if the authentication or a request to the Agreement Ledger fails, the eligibility to receive the corresponding incentives is set to "false"
-and the HTTP status code  200 is returned. The information about the experienced errors is reported to the standard output and logged to the file _error.log_.
+In a case, if the authentication or a request to the Agreement Ledger fails, the eligibility to receive the corresponding 
+incentives is set to "false" and the HTTP status code  200 is returned. The information about the experienced errors 
+is reported to the standard output and logged to the file _error.log_.
 
 ### Error responses
-In several cases HTTP code 500 with response can be returned:
-- if there is no request_id provided in URL parameters
-- if an unexpected exception emerged when processing incentives
-- if the writing of the results to cache failed
+In some cases HTTP code 500 can be returned:
+- if there is no request_id provided in URL parameters,
+- if an unexpected exception emerged when processing incentives,
+- if the writing of the results to cache failed.
 
 # Limitations
-* The communication with the Agreement Ledger could be run in parallel to improve the response. However, the preliminary 
+* The communication with the Agreement Ledger could be faster if run in parallel. However, the preliminary 
 experiments showed favourable response times of the Agreement Ledger, and thus there was no need to further optimise the code.
 

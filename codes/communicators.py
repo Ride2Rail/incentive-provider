@@ -143,8 +143,6 @@ class OfferCacheCommunicator(Communicator):
             if data_type in transl_dict.keys():
                 self.redis_universal_get(pipe, request_id, key, data_type)
                 index_list.append(i)
-            else:
-                res_dict[key] = None
         # execute the pipe
         try:
             pipe_res_list = pipe.execute()

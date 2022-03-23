@@ -144,22 +144,29 @@ class ThreePreviousEpisodesRS(Rule):
         # check for ridesharing
         offer_rs_dict = self.checkRidesharing(data_dict)
         # if OC data was sucesully obtained and if there is at least one ridesharing leg
-        if user_OC_data is not None and offer_rs_dict is not None and any(offer_rs_dict.values()):
-            # get data from agreement ledger
-            req_res = self.communicator_dict["AL_communicator"].accessRuleData({
-                "url": "disc20_url",
-                "id": user_OC_data["traveller_id"]
-            })
-            # if there was no data obtained from AL set the result to false
-            if req_res is None:
-                req_res = False
+        if user_OC_data is not None and offer_rs_dict is not None:
+            # if there is a any ridesharing leg
             ret_dict = {}
-            for offer_id in offer_rs_dict.keys():
-                incentive = self.incentive.getIncentive()
-                # if there is ridesharing and the rider had
-                incentive.eligible = req_res and offer_rs_dict[offer_id]
-                # add incentive to the returned dictionary
-                ret_dict[offer_id] = incentive
+            if any(offer_rs_dict.values()):
+                # get data from agreement ledger
+                req_res = self.communicator_dict["AL_communicator"].accessRuleData({
+                    "url": "disc20_url",
+                    "id": user_OC_data["traveller_id"]
+                })
+                # if there was no data obtained from AL set the result to false
+                if req_res is None:
+                    req_res = False
+                for offer_id in offer_rs_dict.keys():
+                    incentive = self.incentive.getIncentive()
+                    # if there is ridesharing and the rider had
+                    incentive.eligible = req_res and offer_rs_dict[offer_id]
+                    # add incentive to the returned dictionary
+                    ret_dict[offer_id] = incentive
+            else:
+                # if there are no ridesharing legs, just create the incentives
+                for offer_id in offer_rs_dict.keys():
+                    ret_dict[offer_id] = self.incentive.getIncentive()
+
             return ret_dict
         else:
             # if was no data extracted from offer cache, add it to the dictionary

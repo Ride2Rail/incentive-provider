@@ -34,7 +34,7 @@ class AuthTokenObtainer:
         if self.expires is None or self.expires <= datetime.now() + timedelta(seconds=15):
             logger.info("Obtaining new token")
             try:
-                token_request = requests.post(url, headers=headers)
+                token_request = requests.post(url, headers=headers, timeout=5)
             except requests.exceptions.ConnectionError as e:
                 return MyResponse(e, 521, error_source=self.name)
             if token_request.status_code == 200:
@@ -83,7 +83,7 @@ class AuthTokenObtainer:
     def auth_token_request(self, headers, url):
         logger.info("Obtaining new token")
         try:
-            token_request = requests.post(url, headers=headers)
+            token_request = requests.post(url, headers=headers, timeout=5)
         except requests.exceptions.ConnectionError as e:
             return MyResponse(e, 521, error_source='authentication api')
         except Exception as ex:
@@ -161,7 +161,7 @@ class RequestObtainer:
             return None
 
         headers_get = {'accept': 'application/json', 'Authorization': 'Bearer ' + self.auth_token}
-        response = requests.get(url + id, headers=headers_get)
+        response = requests.get(url + id, headers=headers_get, timeout=5)
 
         # check if the response has a proper format
         return self.checkResponse(response, key_attr, name=url)

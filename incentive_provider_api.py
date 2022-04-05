@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from r2r_offer_utils.advanced_logger import *
 import codes.incentive_provider
 from codes import communicators
@@ -34,6 +34,10 @@ def return_incentives():
     # create incentive provider
     IPM = codes.incentive_provider.IncentiveProviderManager(config, auth_token_obt)
 
+    # test connection to the redis database
+    if not IPM.OCC.ping_redis(n_tries=3, sleep_seconds=0.1):
+        return jsonify({"error": "Offer cache redis database not available"}), 500
+
     # execute incentive provider
     try:
         incenitve_dict = IPM.getIncentives({"request_id": request_id})
@@ -42,7 +46,7 @@ def return_incentives():
         logger.error(f"Unexpected exception at the top level of API received: {ex} ")
 
     if incenitve_dict is None:
-        return "Error when processing incentives", 500
+        return jsonify({"error": "Error when processing incentives"}), 500
 
     # print output on the screen (only for testing purposes)
     for key in incenitve_dict:
@@ -55,7 +59,9 @@ def return_incentives():
     if written:
         logger.info("Incentive data successfully written to Cache")
     else:
-        return "Error writing to cache", 500
+        # return "Error writing to cache", 500
+        logger.error("Writing data to cache failed")
+        return jsonify({"error": "Error in writing the incentives to cache."}), 500
     # ?T0DO: add incentive ID to the response
     wrap_res = {
         "offers": incenitve_dict,

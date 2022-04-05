@@ -81,6 +81,14 @@ class OfferCacheCommunicator(Communicator):
         else:
             logger.error('Could not access config file in AgreementLedgerCommunicator')
 
+    def ping_redis(self, n_tries=3, sleep_seconds=0.1):
+        for i in range(0, n_tries):
+            try:
+                return self.cache.ping()
+            except redis.exceptions.ConnectionError as exc:
+                time.sleep(sleep_seconds)
+        logger.error("Connection to the offer cache has not been established.")
+        return False
 
     def read_data_from_offer_cache(self, request_id, list_offer_level_keys, list_tripleg_level_keys):
         """
@@ -91,12 +99,16 @@ class OfferCacheCommunicator(Communicator):
             logger.info(f"Read data from the offer cache: request_id = {request_id},"
                         f"list_offer_level_keys = {list_offer_level_keys}, "
                         f"list_tripleg_level_keys = {list_tripleg_level_keys}")
+            logger.info("++++++++++++++++++++++++++++++++++++++++++++++extracting via offer utils")
+            start = time.time()
             output_offer_level, output_tripleg_level = r2r_offer_utils.cache_operations.read_data_from_cache_wrapper(
                 self.cache,
                 request_id,
                 list_offer_level_keys,
                 list_tripleg_level_keys)
+            logger.info(f"----------------------------------------------extracted via offer utils, time: {time.time() - start}")
         except redis.exceptions.ConnectionError as exc:
+            logger.info(f"----------------------------------------------extracted via offer utils, time: {time.time() - start}")
             logger.error(f"Reading from the offer cache failed in communicators.py: {str(exc)}")
             return None
         return {'output_offer_level': output_offer_level, 'output_tripleg_level': output_tripleg_level}
@@ -134,6 +146,11 @@ class OfferCacheCommunicator(Communicator):
         """
         # dictionary of possible values
         transl_dict = {"l": "list", "v": "value"}
+
+
+        # kind of a stops the redis
+        # self.cache = redis.Redis(host="cache", port=6379, decode_responses=True)
+
         pipe = self.cache.pipeline()
         index_list = [] # list of indexed which were not skipped
         res_dict = {} # dictionary for results
@@ -143,12 +160,10 @@ class OfferCacheCommunicator(Communicator):
             if data_type in transl_dict.keys():
                 self.redis_universal_get(pipe, request_id, key, data_type)
                 index_list.append(i)
+
         # execute the pipe
-        try:
-            pipe_res_list = pipe.execute()
-        # Raised if incorrect key types were provided
-        except redis.exceptions.RedisError as re:
-            logger.error(f"Error when reading from cache, probably wrong data type: \n{re}")
+        pipe_res_list = self.execute_pipe(pipe, operation="read")
+        if pipe_res_list is None:
             return {}
         # extract the data from the pipe to the dictionary, skips attributes with unexpected data type
         for pipe_req, i in itertools.zip_longest(pipe_res_list, index_list):
@@ -179,10 +194,32 @@ class OfferCacheCommunicator(Communicator):
                 if type(value) is bool:
                     value = int(value)
                 pipe.set(key, value)
-        try:
-            pipe_res_list = pipe.execute()
-        # Raised if incorrect key types were provided
-        except redis.exceptions.RedisError as re:
-            logger.error(f"Error when reading from cache, probably wrong data type: \n{re}")
-            return False
-        return True
+        ret_val = self.execute_pipe(pipe, operation="write") is not None
+        return ret_val
+
+    def execute_pipe(self, pipe, operation, retries=3):
+        """
+        method that executes the pipe and handles the exception, if there is a Connection error
+        it tries to connect again 'retries' times.
+        :param pipe: redis pipe to execute
+        :param operation: what type of operation is done
+        :param retries: number of retries to do
+        :return: pipe result if everything was ok, None if there was an exception
+        """
+        con_exc = None
+        # repeat retries times
+        while retries >= 1:
+            try:
+                return pipe.execute()
+            # in case of connection error try again
+            except redis.exceptions.ConnectionError as exc:
+                retries -= 1
+                time.sleep(0.1)
+                con_exc = exc
+                logger.info("retrying connection to redis")
+            # if redis error occurs log it and return none
+            except redis.exceptions.RedisError as re:
+                logger.error(f"Error when piping cache - {operation}, probably wrong data type: \n{re}")
+                return None
+        logger.error(f"Connection error to Cache: \n{con_exc}")
+        return None

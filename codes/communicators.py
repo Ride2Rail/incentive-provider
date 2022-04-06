@@ -99,16 +99,12 @@ class OfferCacheCommunicator(Communicator):
             logger.info(f"Read data from the offer cache: request_id = {request_id},"
                         f"list_offer_level_keys = {list_offer_level_keys}, "
                         f"list_tripleg_level_keys = {list_tripleg_level_keys}")
-            logger.info("++++++++++++++++++++++++++++++++++++++++++++++extracting via offer utils")
-            start = time.time()
             output_offer_level, output_tripleg_level = r2r_offer_utils.cache_operations.read_data_from_cache_wrapper(
                 self.cache,
                 request_id,
                 list_offer_level_keys,
                 list_tripleg_level_keys)
-            logger.info(f"----------------------------------------------extracted via offer utils, time: {time.time() - start}")
         except redis.exceptions.ConnectionError as exc:
-            logger.info(f"----------------------------------------------extracted via offer utils, time: {time.time() - start}")
             logger.error(f"Reading from the offer cache failed in communicators.py: {str(exc)}")
             return None
         return {'output_offer_level': output_offer_level, 'output_tripleg_level': output_tripleg_level}

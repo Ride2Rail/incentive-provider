@@ -6,6 +6,8 @@ from codes import communicators
 from codes.AL_requester import *
 import json
 
+from codes.rules import NoOffersFoundException
+
 service_name    = os.path.splitext(os.path.basename(__file__))[0]
 app             = Flask(service_name)
 
@@ -41,6 +43,20 @@ def return_incentives():
     # execute incentive provider
     try:
         incenitve_dict = IPM.getIncentives({"request_id": request_id})
+    # if there are no offers
+    except NoOffersFoundException as ex:
+        # write empty incentives to cache
+        no_offer_dict = IPM.handleNoOffers(request_id)
+        if no_offer_dict is None:
+            logger.error("Writing data to cache failed")
+            return jsonify({"error": "Error in writing the incentives to cache."}), 500
+
+        logger.info("Incentive data successfully written to Cache")
+        wrap_res = {
+            "offers": no_offer_dict,
+            "request_id": request_id
+        }
+        return json.dumps(wrap_res, indent=4), 200
     except Exception as ex:
         incenitve_dict = None
         logger.error(f"Unexpected exception at the top level of API received: {ex} ")
@@ -55,14 +71,14 @@ def return_incentives():
 
     # write incentives to cache
     written = IPM.incentivesToCache(incenitve_dict, request_id)
+
     # if they could have not been written to cache, return 500
-    if written:
-        logger.info("Incentive data successfully written to Cache")
-    else:
-        # return "Error writing to cache", 500
+    if not written:
         logger.error("Writing data to cache failed")
         return jsonify({"error": "Error in writing the incentives to cache."}), 500
-    # ?T0DO: add incentive ID to the response
+
+    logger.info("Incentive data successfully written to Cache")
+
     wrap_res = {
         "offers": incenitve_dict,
         "request_id": request_id

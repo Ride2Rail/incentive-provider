@@ -7,9 +7,9 @@ logger = logging.getLogger('incentive_provider_api.rules')
 class Rule(ABC):
     def __init__(self, communicator_dict, name, incentive):
         # communicator to get required data for rule evaluation
-        self.communicator_dict  = communicator_dict
+        self.communicator_dict = communicator_dict
         self.name = name
-        self.offer_dict         = {}
+        self.offer_dict = {}
         self.incentive = incentive
 
 
@@ -22,6 +22,21 @@ class Rule(ABC):
 
     def wrapOCcommunication(self):
         pass
+
+    def logOfferProblem(self, trip_offers_data):
+        """
+        logs the problem with offers
+        :param trip_offers_data: dictionary with tripoffer data
+        :return: True if there were no offers, False if a different error occured
+        """
+        if trip_offers_data is not None and 'output_offer_level' in trip_offers_data and \
+         'offer_ids' in trip_offers_data['output_offer_level'] and not trip_offers_data['output_offer_level']['offer_ids']:
+            logger.info(f"Rule: {self.name}: No offers extracted")
+            # raise no offer exception
+            raise NoOffersFoundException
+        else:
+            logger.error(f"Rule: {self.name} State: No data extracted from the Offer cache.")
+            return False
 
 ########################################################################################################################
 ########################################################################################################################
@@ -76,7 +91,7 @@ class TwoPassShared(Rule):
             except KeyError:
                 logger.error(f"Rule: TwoPassShared: Offer cache data cannot be used to determine applicability of the incentive.")
         else:
-            logger.error(f"Rule: TwoPassShared: No data extracted from the Offer cache.")
+            self.logOfferProblem(trip_offers_data)
         return {"no_offer": self.incentive}
 
 
@@ -119,7 +134,7 @@ class RideSharingInvolved(Rule):
             except KeyError:
                 logger.error(f"Rule: RideSharingInvolved State: Offer cache data cannot be used to determine applicability of the incentive.")
         else:
-            logger.error(f"Rule: RideSharingInvolved State: No data extracted from the Offer cache.")
+            self.logOfferProblem(trip_offers_data)
         return {"no_offer": self.incentive}
 
 
@@ -130,6 +145,7 @@ class ThreePreviousEpisodesRS(Rule):
     # Required data: offer_id, <iterated> leg_id, traveller_id, transportation_mode
     def __init__(self, communicator_dict, incentive):
         super().__init__(communicator_dict, "ThreePreviousEpisodesRS", incentive)
+        self.no_offers = False
 
     def checkFulfilled(self, data_dict):
         logger.info(f"Rule: ThreePreviousEpisodesRS State: About to request data from the Offer cache using: "
@@ -170,7 +186,8 @@ class ThreePreviousEpisodesRS(Rule):
             return ret_dict
         else:
             # if was no data extracted from offer cache, add it to the dictionary
-            logger.error(f"Rule: ThreePreviousEpisodesRS: No data extracted from the Offer cache.")
+            if not self.no_offers:
+                logger.error(f"Rule: ThreePreviousEpisodesRS: No data extracted from the Offer cache.")
             return {"no_offer": self.incentive}
 
     def checkRidesharing(self, data_dict):
@@ -206,13 +223,19 @@ class ThreePreviousEpisodesRS(Rule):
                     f"Rule: RideSharingInvolved State: Offer cache data cannot be used to determine applicability of the incentive.")
                 return None
         else:
-            logger.error(f"Rule: RideSharingInvolved State: No data extracted from the Offer cache.")
+            self.no_offers = self.logOfferProblem(trip_offers_data)
             return None
 
-########################################################################################################################
-########################################################################################################################
-########################################################################################################################
+
+class NoOffersFoundException(Exception):
+    """Raised when there are no offers in the request"""
+    pass
+
+
 class Incentive:
+    """
+    Class for the incentives. Main attributes are the eligibility of incentives and the superior incentive (class: Incentive).
+    """
     def __init__(self, incentiveRankerID, description, incentive_above=None):
         self.incentiveRankerID = incentiveRankerID
         self.description = description
@@ -221,8 +244,7 @@ class Incentive:
 
     def getIncentive(self):
         """
-        Factory method to create incentive
-        :return: new instance of the Incentive with the three attributes having the same value
+        Factory method to create an incentive
+        :return: copy of the current Incentive and false eligibility
         """
         return Incentive(self.incentiveRankerID, self.description, self.incentiveAbove)
-

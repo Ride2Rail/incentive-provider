@@ -150,3 +150,16 @@ class IncentiveProviderManager:
 
     def incentivesToCache(self, data_dict, request_id):
         return self.incentiveProvider.flatten_incentives(data_dict, self.OCC, request_id)
+
+    def handleNoOffers(self, request_id):
+        """
+        Method to handle a situation when there are no offers. It writes the "No offer" data to cache.
+        """
+        write_rule_dict, ret_rule_dict = {}, {}
+        for rule in self.rule_list:
+            write_rule_dict[f"{request_id}:incentives:no_offer:{rule.incentive.incentiveRankerID}"] = False
+            ret_rule_dict[f"{rule.incentive.incentiveRankerID}"] = False
+        if self.OCC.write_dict_redis(write_rule_dict):
+            return {"no_offer": ret_rule_dict}
+        else:
+            return None

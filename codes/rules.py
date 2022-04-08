@@ -146,6 +146,8 @@ class ThreePreviousEpisodesRS(Rule):
     def __init__(self, communicator_dict, incentive):
         super().__init__(communicator_dict, "ThreePreviousEpisodesRS", incentive)
         self.no_offers = False
+        self.exception_state_list = \
+            [ExceptionalStateHandler(404, 'message', 'Traveller does not exist', "missing user ID", False)]
 
     def checkFulfilled(self, data_dict):
         logger.info(f"Rule: ThreePreviousEpisodesRS State: About to request data from the Offer cache using: "
@@ -167,7 +169,8 @@ class ThreePreviousEpisodesRS(Rule):
                 # get data from agreement ledger
                 req_res = self.communicator_dict["AL_communicator"].accessRuleData({
                     "url": "disc20_url",
-                    "id": user_OC_data["traveller_id"]
+                    "id": user_OC_data["traveller_id"],
+                    "exception_state_list": self.exception_state_list
                 })
                 # if there was no data obtained from AL set the result to false
                 if req_res is None:
@@ -230,6 +233,29 @@ class ThreePreviousEpisodesRS(Rule):
 class NoOffersFoundException(Exception):
     """Raised when there are no offers in the request"""
     pass
+
+
+class ExceptionalStateHandler:
+    """
+    Class to fluently handle exceptional states from the Agreement ledger
+    """
+
+    def __init__(self, error_code, message_key, message_value, log_message, return_value):
+        self.error_code = error_code
+        self.message_key = message_key
+        self.message_value = message_value
+        self.log_message = log_message
+        self.return_value = return_value
+
+    def is_this_state(self, error_code, response_json, url):
+        if self.error_code == error_code and self.message_key in response_json and\
+                self.message_value == response_json[self.message_key]:
+            logger.info(f"Handled expected state in requester at url {url}: " + self.log_message)
+            return True
+        return False
+
+    def return_dict(self):
+        return self.return_value
 
 
 class Incentive:

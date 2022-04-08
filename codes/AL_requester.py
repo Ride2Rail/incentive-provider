@@ -112,6 +112,7 @@ class RequestObtainer:
     class to execute a request to an external end-point
     """
 
+
     def __init__(self, token_obtainer, name="", auth_config=None):
         """
         :param name: Name of the request obtainer
@@ -136,10 +137,11 @@ class RequestObtainer:
             'accept': 'application/json'
         }
 
-    def load_request(self, url, id, key_attr="check"):
+    def load_request(self, url, id, key_attr="check", exceptional_states=None):
         """
         authenticates and obtains the request from the API
         returns functions directly to the API
+        :param exceptional_states: list of exeptional states
         :param key_attr:
         :param url: url for the request
         :param id: id as a parameter of URL in the get request
@@ -150,6 +152,8 @@ class RequestObtainer:
         """
         # obtains the token from authentication api
         # if there is an error returns MyResponse object
+        if exceptional_states is None:
+            exceptional_states = []
         try:
             self.auth_token = self.token_obtainer.obtain_token(headers=self.headers_auth, url=self.url_auth)
         except requests.exceptions.ConnectionError as e:
@@ -164,9 +168,9 @@ class RequestObtainer:
         response = requests.get(url + id, headers=headers_get, timeout=5)
 
         # check if the response has a proper format
-        return self.checkResponse(response, key_attr, name=url)
+        return self.checkResponse(response, key_attr, name=url+id, exceptional_states=exceptional_states)
 
-    def checkResponse(self, response, key, name=""):
+    def checkResponse(self, response, key, name="", exceptional_states=None):
         if response.status_code == 200:
             try:
                 return self.checkKey(response.json(), key, ret_val=None)
@@ -174,9 +178,15 @@ class RequestObtainer:
                 logger.error(f'Wrong type value of received from the {self.name}: {name}')
         else:
             try:
-                logger.error(f'Error {response.status_code} at {self.name}, response from server: {response.json()}')
+                if exceptional_states is not None:
+                    for except_state in exceptional_states:
+                        if except_state.is_this_state(response.status_code, response.json(), name):
+                            return except_state.return_dict()
+                logger.error(f'Error {response.status_code} at {self.name}, request url: {name}'
+                             f', response from server: {response.json()}')
             except ValueError:
-                logger.error(f'Error {response.status_code} received without a response in {self.name}')
+                logger.error(f'Error {response.status_code} received without a response in {self.name},'
+                             f' request url: {name}')
             return None
 
     def checkKey(self, json_dict, key, ret_val=None):

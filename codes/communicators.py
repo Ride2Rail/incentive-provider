@@ -48,7 +48,11 @@ class AgreementLedgerCommunicator(Communicator):
     def accessRuleData(self, dict_data):
         # obtain the data from Agreement ledger using request obtainer
         url = self.url_dict[dict_data['url']]
-        req_answer = self.requestObtainer.load_request(url, dict_data['id'])
+        exceptional_states_list = None
+        if 'exception_state_list' in dict_data:
+            exceptional_states_list = dict_data['exception_state_list']
+        req_answer = self.requestObtainer.load_request(url, dict_data['id'],
+                                                       exceptional_states=exceptional_states_list)
         if req_answer is None:
             logger.error("Value: None received from Agreement Ledger")
         return req_answer
